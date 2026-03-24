@@ -1,4 +1,5 @@
-import { Download, Sparkles } from "lucide-react";
+import { Download, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -6,19 +7,30 @@ export function ExportPanel({
   blob,
   onDownloadWebm,
   onDownloadMp4,
+  onClose,
 }: {
   blob: Blob | null;
   onDownloadWebm: () => void;
   onDownloadMp4: () => void;
+  onClose: () => void;
 }) {
-  if (!blob) return null;
+  const previewUrl = useMemo(() => (blob ? URL.createObjectURL(blob) : null), [blob]);
 
-  const previewUrl = URL.createObjectURL(blob);
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  if (!blob || !previewUrl) return null;
 
   return (
-    <Card className="mt-4 border-emerald-200">
-      <CardHeader>
+    <Card className="w-full max-w-2xl border-emerald-200 shadow-xl">
+      <CardHeader className="flex flex-row items-start justify-between gap-3">
         <CardTitle className="text-lg">Recording ready</CardTitle>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose} aria-label="Close export panel">
+          <X className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <video controls className="w-full rounded-lg bg-black" src={previewUrl} />

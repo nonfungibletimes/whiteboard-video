@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LayoutMode, OutputFormat, RecorderStatus } from "@/types/studio";
+import type { RecordingQuality } from "@/components/studio/StudioSettingsPanel";
 
-const FORMAT_SIZE: Record<OutputFormat, { width: number; height: number }> = {
-  landscape: { width: 1280, height: 720 },
-  portrait: { width: 720, height: 1280 },
-  square: { width: 1080, height: 1080 },
+const FORMAT_SIZE: Record<RecordingQuality, Record<OutputFormat, { width: number; height: number }>> = {
+  standard: {
+    landscape: { width: 1280, height: 720 },
+    portrait: { width: 720, height: 1280 },
+    square: { width: 720, height: 720 },
+  },
+  hd: {
+    landscape: { width: 1920, height: 1080 },
+    portrait: { width: 1080, height: 1920 },
+    square: { width: 1080, height: 1080 },
+  },
 };
 
 interface RecorderOptions {
@@ -12,10 +20,20 @@ interface RecorderOptions {
   layout: LayoutMode;
   boardCanvas: HTMLCanvasElement | null;
   webcamVideo: HTMLVideoElement | null;
-  boardBackground: "light" | "dark";
+  boardBackground: string;
+  countdownSeconds: 0 | 3 | 5;
+  recordingQuality: RecordingQuality;
 }
 
-export function useWhiteboardRecorder({ format, layout, boardCanvas, webcamVideo, boardBackground }: RecorderOptions) {
+export function useWhiteboardRecorder({
+  format,
+  layout,
+  boardCanvas,
+  webcamVideo,
+  boardBackground,
+  countdownSeconds,
+  recordingQuality,
+}: RecorderOptions) {
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [countdown, setCountdown] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -28,7 +46,7 @@ export function useWhiteboardRecorder({ format, layout, boardCanvas, webcamVideo
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number>(0);
 
-  const dimensions = useMemo(() => FORMAT_SIZE[format], [format]);
+  const dimensions = useMemo(() => FORMAT_SIZE[recordingQuality][format], [format, recordingQuality]);
 
   const drawFrame = useCallback(() => {
     if (!renderCanvasRef.current || !boardCanvas) return;
@@ -39,13 +57,13 @@ export function useWhiteboardRecorder({ format, layout, boardCanvas, webcamVideo
     renderCanvasRef.current.width = width;
     renderCanvasRef.current.height = height;
 
-    ctx.fillStyle = boardBackground === "dark" ? "#0f172a" : "#ffffff";
+    ctx.fillStyle = boardBackground;
     ctx.fillRect(0, 0, width, height);
 
     if (layout === "side-by-side" && webcamVideo) {
       const leftW = Math.floor(width * 0.65);
       ctx.drawImage(boardCanvas, 0, 0, leftW, height);
-      ctx.fillStyle = boardBackground === "dark" ? "#111827" : "#f3f4f6";
+      ctx.fillStyle = "#f3f4f6";
       ctx.fillRect(leftW, 0, width - leftW, height);
       ctx.drawImage(webcamVideo, leftW + 16, 16, width - leftW - 32, height - 32);
     } else {
@@ -75,7 +93,7 @@ export function useWhiteboardRecorder({ format, layout, boardCanvas, webcamVideo
     }
 
     animationRef.current = requestAnimationFrame(drawFrame);
-  }, [boardCanvas, boardBackground, dimensions, layout, webcamVideo]);
+  }, [boardBackground, boardCanvas, dimensions, layout, webcamVideo]);
 
   const startRecorder = useCallback(async () => {
     if (!boardCanvas) {
@@ -85,17 +103,19 @@ export function useWhiteboardRecorder({ format, layout, boardCanvas, webcamVideo
 
     setError(null);
     setRecordedBlob(null);
-    setStatus("countdown");
-    setCountdown(3);
 
     const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }).catch(() => null);
 
-    for (let i = 3; i > 0; i -= 1) {
-      setCountdown(i);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (countdownSeconds > 0) {
+      setStatus("countdown");
+      setCountdown(countdownSeconds);
+      for (let i = countdownSeconds; i > 0; i -= 1) {
+        setCountdown(i);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      setCountdown(0);
     }
 
-    setCountdown(0);
     setStatus("recording");
 
     const renderCanvas = document.createElement("canvas");
@@ -138,7 +158,7 @@ export function useWhiteboardRecorder({ format, layout, boardCanvas, webcamVideo
     timerRef.current = window.setInterval(() => {
       setDuration((prev) => prev + 1);
     }, 1000);
-  }, [boardCanvas, drawFrame]);
+  }, [boardCanvas, countdownSeconds, drawFrame]);
 
   const pauseRecorder = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {

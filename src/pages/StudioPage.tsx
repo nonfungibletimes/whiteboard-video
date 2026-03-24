@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WhiteboardCanvas } from "@/components/studio/WhiteboardCanvas";
 import { FormatSelector } from "@/components/studio/FormatSelector";
 import { LayoutSelector } from "@/components/studio/LayoutSelector";
@@ -7,6 +7,7 @@ import { RecordingControls } from "@/components/studio/RecordingControls";
 import { WebcamPiP } from "@/components/studio/WebcamPiP";
 import { TemplateManager } from "@/components/studio/TemplateManager";
 import { ExportPanel } from "@/components/studio/ExportPanel";
+import { StudioSettingsPanel, type PenThickness, type RecordingQuality } from "@/components/studio/StudioSettingsPanel";
 import { useWebcam } from "@/hooks/use-webcam";
 import { useWhiteboardRecorder } from "@/hooks/use-whiteboard-recorder";
 import type { LayoutMode, OutputFormat, SavedTemplate } from "@/types/studio";
@@ -22,10 +23,24 @@ function loadTemplates(): SavedTemplate[] {
   }
 }
 
+const FORMAT_CLASS: Record<OutputFormat, string> = {
+  landscape: "aspect-[16/9] h-full w-auto max-h-full max-w-full",
+  portrait: "aspect-[9/16] h-full w-auto max-h-full max-w-full",
+  square: "aspect-square h-full w-auto max-h-full max-w-full",
+};
+
 export function StudioPage() {
   const [format, setFormat] = useState<OutputFormat>("landscape");
   const [layout, setLayout] = useState<LayoutMode>("pip-br");
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [penColor, setPenColor] = useState("#1e293b");
+  const [penThickness, setPenThickness] = useState<PenThickness>("medium");
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [showGrid, setShowGrid] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState<0 | 3 | 5>(3);
+  const [recordingQuality, setRecordingQuality] = useState<RecordingQuality>("standard");
+  const [isExportOpen, setIsExportOpen] = useState(true);
+
   const [boardCanvas, setBoardCanvas] = useState<HTMLCanvasElement | null>(null);
   const [webcamVideo, setWebcamVideo] = useState<HTMLVideoElement | null>(null);
   // Use ref for scene data — it changes constantly from Excalidraw onChange
@@ -43,8 +58,14 @@ export function StudioPage() {
     layout,
     boardCanvas,
     webcamVideo,
-    boardBackground: theme,
+    boardBackground: backgroundColor,
+    countdownSeconds,
+    recordingQuality,
   });
+
+  useEffect(() => {
+    if (recorder.recordedBlob) setIsExportOpen(true);
+  }, [recorder.recordedBlob]);
 
   const handleSceneChange = useCallback((data: { elements: unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> }) => {
     sceneDataRef.current = data;
@@ -81,6 +102,8 @@ export function StudioPage() {
 
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
+  const canvasAspectClass = useMemo(() => FORMAT_CLASS[format], [format]);
+
   return (
     <main className="h-screen overflow-hidden bg-slate-100 text-slate-900">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -89,7 +112,7 @@ export function StudioPage() {
           <FormatSelector value={format} onChange={setFormat} />
           <LayoutSelector value={layout} onChange={setLayout} />
           <Button variant="outline" size="sm" onClick={() => setTheme((prev) => (prev === "light" ? "dark" : "light"))}>
-            {theme === "light" ? "Dark canvas" : "Light canvas"}
+            {theme === "light" ? "Dark UI" : "Light UI"}
           </Button>
         </div>
         <RecordingControls
@@ -104,18 +127,40 @@ export function StudioPage() {
       </header>
 
       <section className="relative h-[calc(100vh-65px)] p-4">
-        <div className="h-full overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <WhiteboardCanvas
-            theme={theme}
-            onCanvasReady={setBoardCanvas}
-            onSceneChange={handleSceneChange}
-            initialData={initialData}
+        <div className="absolute inset-y-4 left-8 z-30 w-[280px] space-y-3">
+          <TemplateManager templates={templates} onSave={saveTemplate} onLoad={loadTemplate} onDelete={deleteTemplate} />
+          <StudioSettingsPanel
+            penColor={penColor}
+            onPenColorChange={setPenColor}
+            penThickness={penThickness}
+            onPenThicknessChange={setPenThickness}
+            backgroundColor={backgroundColor}
+            onBackgroundColorChange={setBackgroundColor}
+            showGrid={showGrid}
+            onShowGridChange={setShowGrid}
+            countdownSeconds={countdownSeconds}
+            onCountdownChange={setCountdownSeconds}
+            recordingQuality={recordingQuality}
+            onRecordingQualityChange={setRecordingQuality}
           />
+          {recorder.error && <p className="rounded bg-red-50 p-2 text-xs text-red-600">{recorder.error}</p>}
         </div>
 
-        <div className="absolute left-8 top-8 z-30 w-[280px]">
-          <TemplateManager templates={templates} onSave={saveTemplate} onLoad={loadTemplate} onDelete={deleteTemplate} />
-          {recorder.error && <p className="mt-2 rounded bg-red-50 p-2 text-xs text-red-600">{recorder.error}</p>}
+        <div className="flex h-full items-center justify-center px-[300px]">
+          <div className={`mx-auto ${canvasAspectClass}`}>
+            <div className="h-full overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <WhiteboardCanvas
+                theme={theme}
+                penColor={penColor}
+                penThickness={penThickness}
+                backgroundColor={backgroundColor}
+                showGrid={showGrid}
+                onCanvasReady={setBoardCanvas}
+                onSceneChange={handleSceneChange}
+                initialData={initialData}
+              />
+            </div>
+          </div>
         </div>
 
         <WebcamPiP
@@ -127,13 +172,16 @@ export function StudioPage() {
         />
       </section>
 
-      <div className="mx-4 mb-4 -mt-2">
-        <ExportPanel
-          blob={recorder.recordedBlob}
-          onDownloadWebm={() => recorder.downloadRecording("webm")}
-          onDownloadMp4={() => recorder.downloadRecording("mp4")}
-        />
-      </div>
+      {recorder.recordedBlob && isExportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+          <ExportPanel
+            blob={recorder.recordedBlob}
+            onClose={() => setIsExportOpen(false)}
+            onDownloadWebm={() => recorder.downloadRecording("webm")}
+            onDownloadMp4={() => recorder.downloadRecording("mp4")}
+          />
+        </div>
+      )}
     </main>
   );
 }
