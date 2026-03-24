@@ -10,6 +10,7 @@ interface Props {
   showGrid: boolean;
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
   onSceneChange: (data: { elements: unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> }) => void;
+  onApiReady?: (api: any) => void;
   initialData?: {
     elements: unknown[];
     appState?: Record<string, unknown>;
@@ -31,6 +32,7 @@ export const WhiteboardCanvas = memo(function WhiteboardCanvas({
   showGrid,
   onCanvasReady,
   onSceneChange,
+  onApiReady,
   initialData,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -45,8 +47,9 @@ export const WhiteboardCanvas = memo(function WhiteboardCanvas({
 
   const handleApiReady = useCallback((api: unknown) => {
     excalidrawApiRef.current = api;
+    onApiReady?.(api as any);
     reportCanvas();
-  }, [reportCanvas]);
+  }, [onApiReady, reportCanvas]);
 
   // Stable onChange handler — avoids re-render loops from Excalidraw's frequent calls
   const handleChange = useCallback((elements: unknown, appState: unknown, files: unknown) => {
@@ -72,6 +75,25 @@ export const WhiteboardCanvas = memo(function WhiteboardCanvas({
       },
     });
   }, [backgroundColor, penColor, penThickness, showGrid]);
+
+  useEffect(() => {
+    const api = excalidrawApiRef.current;
+    if (!api || !initialData) return;
+
+    const currentAppState = api.getAppState?.() ?? {};
+    api.updateScene?.({
+      elements: initialData.elements ?? [],
+      appState: {
+        ...currentAppState,
+        ...(initialData.appState ?? {}),
+        currentItemStrokeColor: penColor,
+        currentItemStrokeWidth: THICKNESS_VALUE[penThickness],
+        viewBackgroundColor: backgroundColor,
+        gridSize: showGrid ? 20 : null,
+      },
+      files: initialData.files ?? {},
+    });
+  }, [backgroundColor, initialData, penColor, penThickness, showGrid]);
 
   const mergedInitialData = useMemo(() => ({
     ...(initialData ?? { elements: [] }),

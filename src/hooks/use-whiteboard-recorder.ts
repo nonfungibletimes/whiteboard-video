@@ -23,6 +23,8 @@ interface RecorderOptions {
   boardBackground: string;
   countdownSeconds: 0 | 3 | 5;
   recordingQuality: RecordingQuality;
+  captionsEnabled?: boolean;
+  captionText?: string;
 }
 
 export function useWhiteboardRecorder({
@@ -33,6 +35,8 @@ export function useWhiteboardRecorder({
   boardBackground,
   countdownSeconds,
   recordingQuality,
+  captionsEnabled,
+  captionText,
 }: RecorderOptions) {
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [countdown, setCountdown] = useState(0);
@@ -92,8 +96,26 @@ export function useWhiteboardRecorder({
       }
     }
 
+    if (captionsEnabled && captionText?.trim()) {
+      const text = captionText.trim();
+      const boxW = Math.min(width * 0.86, 980);
+      const boxX = (width - boxW) / 2;
+      const boxY = height - 120;
+
+      ctx.fillStyle = "rgba(15,23,42,0.72)";
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, 70, 12);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "600 30px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, width / 2, boxY + 35, boxW - 24);
+    }
+
     animationRef.current = requestAnimationFrame(drawFrame);
-  }, [boardBackground, boardCanvas, dimensions, layout, webcamVideo]);
+  }, [boardBackground, boardCanvas, captionText, captionsEnabled, dimensions, layout, webcamVideo]);
 
   const startRecorder = useCallback(async () => {
     if (!boardCanvas) {
