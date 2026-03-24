@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WhiteBoard Video | Create Whiteboard Videos in Minutes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#d2bbff",
+                "surface-container": "#201f1f",
+                "on-secondary-fixed": "#001f26",
+                "surface": "#131313",
+                "outline": "#958da1",
+                "secondary-fixed": "#acedff",
+                "inverse-primary": "#732ee4",
+                "on-primary-container": "#ede0ff",
+                "tertiary-container": "#a15100",
+                "surface-bright": "#393939",
+                "inverse-on-surface": "#313030",
+                "background": "#131313",
+                "on-tertiary": "#4f2500",
+                "on-background": "#e5e2e1",
+                "tertiary-fixed": "#ffdcc6",
+                "on-primary-fixed": "#25005a",
+                "on-surface-variant": "#ccc3d8",
+                "surface-tint": "#d2bbff",
+                "secondary-fixed-dim": "#4cd7f6",
+                "on-surface": "#e5e2e1",
+                "inverse-surface": "#e5e2e1",
+                "surface-container-low": "#1c1b1b",
+                "surface-container-highest": "#353534",
+                "surface-container-high": "#2a2a2a",
+                "secondary": "#4cd7f6",
+                "surface-container-lowest": "#0e0e0e",
+                "on-tertiary-container": "#ffe0cd",
+                "on-secondary-container": "#00424e",
+                "secondary-container": "#03b5d3",
+                "error": "#ffb4ab",
+                "on-secondary": "#003640",
+                "primary-container": "#7c3aed",
+                "error-container": "#93000a",
+                "tertiary-fixed-dim": "#ffb784",
+                "on-tertiary-fixed": "#301400",
+                "on-primary": "#3f008e",
+                "tertiary": "#ffb784",
+                "primary-fixed-dim": "#d2bbff",
+                "on-error": "#690005",
+                "on-primary-fixed-variant": "#5a00c6",
+                "surface-variant": "#353534",
+                "primary-fixed": "#eaddff",
+                "on-tertiary-fixed-variant": "#713700",
+                "on-secondary-fixed-variant": "#004e5c",
+                "outline-variant": "#4a4455",
+                "on-error-container": "#ffdad6",
+                "surface-dim": "#131313"
+              },
+              fontFamily: {
+                "headline": ["Space Grotesk"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(53, 53, 52, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .hero-glow {
+            background: radial-gradient(circle at center, rgba(124, 58, 237, 0.15) 0%, rgba(19, 19, 19, 0) 70%);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface-container-high/60 backdrop-blur-xl shadow-xl shadow-violet-900/5">
+<div class="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
+<div class="text-2xl font-bold tracking-tighter text-slate-900 dark:text-slate-100 font-headline">
+                WhiteBoard Video
+            </div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-violet-600 dark:text-violet-400 border-b-2 border-violet-500 pb-1 font-headline font-bold tracking-tight" href="#features">Features</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors font-headline font-bold tracking-tight" href="#how-it-works">How it Works</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors font-headline font-bold tracking-tight" href="#pricing">Pricing</a>
+</div>
+<div class="flex items-center space-x-6">
+<button class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors font-headline font-bold tracking-tight">Log In</button>
+<button class="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-lg font-headline font-bold tracking-tight hover:opacity-80 transition-all duration-300 scale-95 active:scale-90">Start Recording</button>
+</div>
+</div>
+</nav>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="relative min-h-[921px] flex flex-col items-center justify-center px-8 hero-glow overflow-hidden">
+<div class="max-w-5xl mx-auto text-center z-10">
+<h1 class="font-headline text-5xl md:text-7xl font-bold tracking-tight text-on-surface mb-6 leading-tight">
+                    Create Whiteboard <span class="text-secondary">Videos</span> in Minutes
+                </h1>
+<p class="text-lg md:text-xl text-on-surface-variant max-w-2xl mx-auto mb-10 leading-relaxed">
+                    No downloads, no accounts, just record. The fastest way to share ideas with your team through beautiful handwritten diagrams.
+                </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+<button class="bg-primary-container text-on-primary-container px-10 py-4 rounded-xl font-headline text-lg font-bold hover:opacity-90 transition-all scale-100 active:scale-95 shadow-lg shadow-primary-container/20">
+                        Start Recording Free
+                    </button>
+<button class="bg-transparent border border-outline-variant/30 px-10 py-4 rounded-xl font-headline text-lg font-bold hover:bg-surface-container-high transition-all">
+                        View Demo
+                    </button>
+</div>
+</div>
+<!-- Hero Mockup -->
+<div class="mt-20 w-full max-w-6xl mx-auto relative group">
+<div class="absolute -inset-1 bg-gradient-to-r from-primary-container to-secondary-container rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+<div class="relative bg-surface-container-lowest rounded-xl p-2 border border-outline-variant/10 shadow-2xl">
+<div class="aspect-video w-full rounded-lg overflow-hidden relative bg-white">
+<img alt="Application UI Preview" class="w-full h-full object-cover grayscale-[0.2]" data-alt="Modern digital whiteboard interface with hand-drawn architectural diagrams and colorful geometric shapes on a clean white canvas" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbIAc6ih5Z7fY8vPUNzjLari2CkLVBvHxfNpWFbTexP5QdTzoWjyiFwTT7Hy90pHHFqsZnuysA3LITlUVFwzr51y-m0Rq2rbsQxDgJ0FvyW70TP2ANa5w5h3Siq-UbWfL3SpfyVwv2dZmtwaEXFh__Xp8BxgjzgsYeFJLss4vMHG42cnInsA3oZpv4wS-6UOYt2x6KIZz1o-JqZg7KHLhyJJa2a_wPk6FE-Keke9HNdy-nK8qhxf-lmuoxGqETZ5TL0afB0DW4bAI"/>
+<!-- Webcam PiP Overlay -->
+<div class="absolute bottom-6 right-6 w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-primary-container overflow-hidden shadow-2xl">
+<img alt="Presenter Webcam" class="w-full h-full object-cover" data-alt="Professional man speaking to camera in a brightly lit home office with soft bokeh background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMIUVvsxDRPd_tvH9n0nBscBmDZVAlE5i1bYzgqbgyW3aRq9oycX0ZXHjDsNLzZ1IxgfD-qRKbOc-RDfiEmDPWUE44pzbk90L14Lrp89kqSiT5AT2m7kOImH6jhCt_j_pwvmizlHatZr_rFNj2IBaFoBD_WWmLa_Wo-RO64WO5PD32g7SDZ7d4mWpWGnM_t9H-QKP8aJunn5W5qnEPjKOFfV8eyG55xDGThZY2E-Ih8tmjSecUT62H263fnDJguEUQI0gnDc-Qty4"/>
+</div>
+<!-- Recording Indicator -->
+<div class="absolute top-6 left-6 flex items-center space-x-2 bg-red-500/90 text-white px-4 py-1.5 rounded-full font-headline font-bold text-sm animate-pulse">
+<span class="w-2 h-2 bg-white rounded-full"></span>
+<span>REC 02:14</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="py-32 px-8 max-w-7xl mx-auto" id="features">
+<div class="text-center mb-20">
+<h2 class="font-headline text-4xl md:text-5xl font-bold mb-4">Built for clarity and speed.</h2>
+<div class="w-24 h-1 bg-secondary mx-auto rounded-full"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Card 1 -->
+<div class="glass-card p-8 rounded-xl border border-outline-variant/10 hover:bg-surface-container-high transition-all duration-500 group">
+<div class="w-12 h-12 bg-primary-container rounded-lg flex items-center justify-center mb-6 text-on-primary-container group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+</div>
+<h3 class="font-headline text-2xl font-bold mb-3 text-primary">Excalidraw-powered</h3>
+<p class="text-on-surface-variant leading-relaxed">Beautiful, hand-drawn style diagramming tools that make your presentations feel organic and engaging.</p>
+</div>
+<!-- Card 2 -->
+<div class="glass-card p-8 rounded-xl border border-outline-variant/10 hover:bg-surface-container-high transition-all duration-500 group">
+<div class="w-12 h-12 bg-secondary-container rounded-lg flex items-center justify-center mb-6 text-on-secondary-container group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="videocam">videocam</span>
+</div>
+<h3 class="font-headline text-2xl font-bold mb-3 text-secondary">Webcam PiP</h3>
+<p class="text-on-surface-variant leading-relaxed">6 flexible layout options to show your face alongside your ideas, ensuring your team stays connected to the presenter.</p>
+</div>
+<!-- Card 3 -->
+<div class="glass-card p-8 rounded-xl border border-outline-variant/10 hover:bg-surface-container-high transition-all duration-500 group">
+<div class="w-12 h-12 bg-tertiary-container rounded-lg flex items-center justify-center mb-6 text-on-tertiary-container group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="aspect_ratio">aspect_ratio</span>
+</div>
+<h3 class="font-headline text-2xl font-bold mb-3 text-tertiary">Multiple Export Formats</h3>
+<p class="text-on-surface-variant leading-relaxed">Ready for any platform with 16:9 Landscape for YouTube, 9:16 Portrait for mobile, and 1:1 Square for social feeds.</p>
+</div>
+<!-- Card 4 -->
+<div class="glass-card p-8 rounded-xl border border-outline-variant/10 hover:bg-surface-container-high transition-all duration-500 group">
+<div class="w-12 h-12 bg-outline-variant rounded-lg flex items-center justify-center mb-6 text-on-surface group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="dark_mode">dark_mode</span>
+</div>
+<h3 class="font-headline text-2xl font-bold mb-3 text-on-surface">Dark/Light Mode</h3>
+<p class="text-on-surface-variant leading-relaxed">Toggle between elegant themes to match your personal brand style or the environment of your presentation.</p>
+</div>
+</div>
+</section>
+<!-- How it Works Section -->
+<section class="py-32 bg-surface-container-lowest" id="how-it-works">
+<div class="max-w-7xl mx-auto px-8">
+<div class="flex flex-col md:flex-row items-center justify-between gap-16">
+<div class="md:w-1/2">
+<h2 class="font-headline text-4xl md:text-5xl font-bold mb-12">From idea to video in seconds.</h2>
+<div class="space-y-12">
+<div class="flex items-start space-x-6">
+<div class="flex-shrink-0 w-10 h-10 rounded-full border-2 border-primary text-primary flex items-center justify-center font-headline font-bold">1</div>
+<div>
+<h4 class="font-headline text-xl font-bold mb-2">Draw on the infinite whiteboard canvas</h4>
+<p class="text-on-surface-variant">Use intuitive tools to sketch, diagram, and illustrate your concepts without limits.</p>
+</div>
+</div>
+<div class="flex items-start space-x-6">
+<div class="flex-shrink-0 w-10 h-10 rounded-full border-2 border-secondary text-secondary flex items-center justify-center font-headline font-bold">2</div>
+<div>
+<h4 class="font-headline text-xl font-bold mb-2">Record with your webcam and voice</h4>
+<p class="text-on-surface-variant">Sync your explanation with your drawings in real-time. Choose your preferred PiP layout.</p>
+</div>
+</div>
+<div class="flex items-start space-x-6">
+<div class="flex-shrink-0 w-10 h-10 rounded-full border-2 border-primary-fixed text-primary-fixed flex items-center justify-center font-headline font-bold">3</div>
+<div>
+<h4 class="font-headline text-xl font-bold mb-2">Download instantly and share anywhere</h4>
+<p class="text-on-surface-variant">No rendering wait times. Your high-quality MP4 file is ready as soon as you stop recording.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="md:w-1/2 relative">
+<div class="aspect-square rounded-xl overflow-hidden shadow-2xl shadow-primary-container/10">
+<img alt="Team collaborating" class="w-full h-full object-cover grayscale opacity-50" data-alt="Modern office setting with a diverse team brainstorming ideas around a large glass table, creative energy atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQVNzItJyBe_CIXWxzLEJoo-Y9KjiJWnb0z-EJcacHcgJiPosvKsCrSrUvnwqKzYFo5ZCgEH69l6Tbh-015Z9wuWnElKcf8hwChgGGpvnuX38WZUngUC8JVMGGmx8iUhJ43vzB68-Ex-ZYMteSxy13B7K0aoT1Ciepbam6OXkB5vEsLaXJrHHJauADk8hxkuU9FcybBL70FSSNqskoa5yg36T86MnQfpKV12h2tnlE0DyGccfqQJaewFw4r3FCPIUQUW_1ZRnaKxQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest to-transparent"></div>
+<!-- Floating Icon -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-primary-container rounded-full flex items-center justify-center shadow-xl">
+<span class="material-symbols-outlined text-4xl text-on-primary-container" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Section -->
+<section class="py-32 px-8 max-w-7xl mx-auto" id="pricing">
+<div class="text-center mb-20">
+<h2 class="font-headline text-4xl md:text-5xl font-bold mb-4">Simple, transparent pricing</h2>
+<p class="text-on-surface-variant">Choose the plan that fits your recording needs.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
+<!-- Free Plan -->
+<div class="glass-card p-8 rounded-xl border border-outline-variant/10 flex flex-col h-full">
+<h3 class="font-headline text-2xl font-bold mb-2">Free</h3>
+<div class="mb-6">
+<span class="text-4xl font-bold">$0</span>
+<span class="text-on-surface-variant">/forever</span>
+</div>
+<ul class="space-y-4 mb-10 flex-grow">
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle">check_circle</span>
+<span>Watermarked videos</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle">check_circle</span>
+<span>5-minute recording limit</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle">check_circle</span>
+<span>Standard resolution</span>
+</li>
+</ul>
+<button class="w-full py-3 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-all font-bold">Get Started</button>
+</div>
+<!-- Pro Plan -->
+<div class="glass-card p-8 rounded-xl border-2 border-primary-container flex flex-col h-full relative scale-105 shadow-2xl shadow-primary-container/10">
+<div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary-container text-on-primary-container px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Most Popular</div>
+<h3 class="font-headline text-2xl font-bold mb-2">Pro</h3>
+<div class="mb-6">
+<span class="text-4xl font-bold">$9</span>
+<span class="text-on-surface-variant">/mo</span>
+</div>
+<ul class="space-y-4 mb-10 flex-grow">
+<li class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>No watermarks</span>
+</li>
+<li class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Unlimited recording time</span>
+</li>
+<li class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>4K Export quality</span>
+</li>
+<li class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Priority support</span>
+</li>
+</ul>
+<button class="w-full py-4 rounded-lg bg-primary-container text-on-primary-container hover:opacity-90 transition-all font-bold text-lg">Go Pro</button>
+</div>
+<!-- Team Plan -->
+<div class="glass-card p-8 rounded-xl border border-outline-variant/10 flex flex-col h-full">
+<h3 class="font-headline text-2xl font-bold mb-2">Team</h3>
+<div class="mb-6">
+<span class="text-4xl font-bold">$19</span>
+<span class="text-on-surface-variant">/mo</span>
+</div>
+<ul class="space-y-4 mb-10 flex-grow">
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle">check_circle</span>
+<span>Everything in Pro</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle">check_circle</span>
+<span>Collaboration tools</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle">check_circle</span>
+<span>Custom brand kit</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="check_circle">check_circle</span>
+<span>Shared asset library</span>
+</li>
+</ul>
+<button class="w-full py-3 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-all font-bold">Contact Sales</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-slate-950 w-full py-12 px-8">
+<div class="flex flex-col md:flex-row justify-between items-center border-t border-slate-800 pt-12 max-w-7xl mx-auto space-y-8 md:space-y-0">
+<div class="flex flex-col items-center md:items-start">
+<div class="font-space-grotesk font-bold text-slate-200 text-xl mb-2">WhiteBoard Video</div>
+<p class="font-inter text-sm text-slate-400">2024 WhiteBoard Video. Powered by Cadegent.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-slate-500 hover:text-violet-400 transition-colors font-inter text-sm opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="text-slate-500 hover:text-violet-400 transition-colors font-inter text-sm opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+<a class="text-slate-500 hover:text-violet-400 transition-colors font-inter text-sm opacity-80 hover:opacity-100" href="#">Contact Us</a>
+<a class="text-slate-500 hover:text-violet-400 transition-colors font-inter text-sm opacity-80 hover:opacity-100" href="#">Twitter</a>
+<a class="text-slate-500 hover:text-violet-400 transition-colors font-inter text-sm opacity-80 hover:opacity-100" href="#">LinkedIn</a>
+</div>
+</div>
+</footer>
+</body></html>
