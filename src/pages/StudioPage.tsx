@@ -1,4 +1,4 @@
-import { Captions, Link2, MonitorPlay } from "lucide-react";
+import { Captions, Image as ImageIcon, Link2, MonitorPlay, Wand2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WhiteboardCanvas } from "@/components/studio/WhiteboardCanvas";
@@ -18,6 +18,8 @@ import { CaptionOverlay } from "@/components/studio/CaptionOverlay";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import { SlideNav, type SlideItem } from "@/components/studio/SlideNav";
 import { AiDiagramPrompt } from "@/components/studio/AiDiagramPrompt";
+import { ImageFinder } from "@/components/studio/ImageFinder";
+import { useBackgroundRemoval } from "@/hooks/use-background-removal";
 
 const TEMPLATE_KEY = "wb-video-templates-v1";
 const SLIDES_KEY = "wb-video-slides-v1";
@@ -46,6 +48,24 @@ const FORMAT_CLASS: Record<OutputFormat, string> = {
   square: "aspect-square h-full w-auto max-h-full max-w-full",
 };
 
+function getImageSize(dataUrl: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth || 800, height: img.naturalHeight || 600 });
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = dataUrl;
+  });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Failed to parse blob"));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export function StudioPage() {
   const [format, setFormat] = useState<OutputFormat>("landscape");
   const [layout, setLayout] = useState<LayoutMode>("pip-br");
@@ -61,6 +81,8 @@ export function StudioPage() {
   const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [teleprompterScript, setTeleprompterScript] = useState("");
   const [captionsEnabled, setCaptionsEnabled] = useState(false);
+  const [showImageFinder, setShowImageFinder] = useState(false);
+  const [latestFinderImage, setLatestFinderImage] = useState<{ dataUrl: string; name: string } | null>(null);
 
   const [slides, setSlides] = useState<SlideItem[]>(() => loadSlides());
   const [activeSlideId, setActiveSlideId] = useState<string>("");
@@ -74,6 +96,7 @@ export function StudioPage() {
 
   const { transcript, isSupported: captionsSupported, start: startCaptions, stop: stopCaptions } = useSpeechRecognition();
   const { stream, enableWebcam, disableWebcam } = useWebcam();
+  const { removeBackground, isProcessing: isRemovingLatestBg } = useBackgroundRemoval();
 
   const recorder = useWhiteboardRecorder({
     format,
@@ -193,6 +216,79 @@ export function StudioPage() {
     api.updateScene?.({ elements: [...existing, ...newElements], appState, files });
   }, []);
 
+  const addImageToCanvas = useCallback(async (dataUrl: string, mimeType: string, name?: string) => {
+    const api = excalidrawApiRef.current;
+    if (!api) return;
+
+    const { width, height } = await getImageSize(dataUrl);
+    const maxWidth = 420;
+    const scale = width > maxWidth ? maxWidth / width : 1;
+    const finalWidth = Math.max(80, Math.round(width * scale));
+    const finalHeight = Math.max(80, Math.round(height * scale));
+
+    const fileId = crypto.randomUUID();
+    const now = Date.now();
+
+    api.addFiles?.([
+      {
+        id: fileId,
+        dataURL: dataUrl,
+        mimeType,
+        created: now,
+        lastRetrieved: now,
+        size: dataUrl.length,
+        name: name ?? "image",
+      },
+    ]);
+
+    const existing = (api.getSceneElements?.() ?? []) as Record<string, unknown>[];
+
+    const imageElement = {
+      id: crypto.randomUUID(),
+      type: "image",
+      x: 120,
+      y: 120,
+      width: finalWidth,
+      height: finalHeight,
+      angle: 0,
+      strokeColor: "transparent",
+      backgroundColor: "transparent",
+      fillStyle: "solid",
+      strokeWidth: 1,
+      strokeStyle: "solid",
+      roughness: 0,
+      opacity: 100,
+      groupIds: [],
+      frameId: null,
+      roundness: null,
+      seed: Math.floor(Math.random() * 1_000_000),
+      version: 1,
+      versionNonce: Math.floor(Math.random() * 1_000_000),
+      isDeleted: false,
+      boundElements: null,
+      updated: now,
+      link: null,
+      locked: false,
+      fileId,
+      scale: [1, 1],
+      status: "saved",
+    };
+
+    api.updateScene?.({
+      elements: [...existing, imageElement],
+      appState: api.getAppState?.() ?? {},
+      files: api.getFiles?.() ?? {},
+    });
+  }, []);
+
+  const removeBgFromLatest = useCallback(async () => {
+    if (!latestFinderImage) return;
+    const blob = await fetch(latestFinderImage.dataUrl).then((r) => r.blob());
+    const result = await removeBackground(blob);
+    const dataUrl = await blobToDataUrl(result);
+    setLatestFinderImage({ dataUrl, name: `${latestFinderImage.name.replace(/\.[^/.]+$/, "")}-no-bg.png` });
+  }, [latestFinderImage, removeBackground]);
+
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
   const canvasAspectClass = useMemo(() => FORMAT_CLASS[format], [format]);
 
@@ -204,6 +300,7 @@ export function StudioPage() {
           <FormatSelector value={format} onChange={setFormat} />
           <LayoutSelector value={layout} onChange={setLayout} />
           <Button variant="outline" size="sm" onClick={() => setTheme((prev) => (prev === "light" ? "dark" : "light"))}>{theme === "light" ? "Dark UI" : "Light UI"}</Button>
+          <Button variant={showImageFinder ? "default" : "outline"} size="sm" onClick={() => setShowImageFinder((p) => !p)}><ImageIcon className="mr-1 h-4 w-4" />Images</Button>
           <Button variant={showTeleprompter ? "default" : "outline"} size="sm" onClick={() => setShowTeleprompter((p) => !p)}><MonitorPlay className="mr-1 h-4 w-4" />Teleprompter</Button>
           <Button variant={captionsEnabled ? "default" : "outline"} size="sm" disabled={!captionsSupported} onClick={() => setCaptionsEnabled((p) => !p)}><Captions className="mr-1 h-4 w-4" />CC</Button>
           <Button variant="outline" size="sm" onClick={persistCurrentSlide}><Link2 className="mr-1 h-4 w-4" />Save Slide</Button>
@@ -236,8 +333,25 @@ export function StudioPage() {
             recordingQuality={recordingQuality}
             onRecordingQualityChange={setRecordingQuality}
           />
+          {latestFinderImage && (
+            <Button size="sm" variant="outline" className="w-full" onClick={() => void removeBgFromLatest()} disabled={isRemovingLatestBg}>
+              <Wand2 className="mr-2 h-4 w-4" />
+              {isRemovingLatestBg ? "Removing background..." : "Remove BG (latest image)"}
+            </Button>
+          )}
           {recorder.error && <p className="rounded bg-red-50 p-2 text-xs text-red-600">{recorder.error}</p>}
         </div>
+
+        {showImageFinder && (
+          <ImageFinder
+            visible={showImageFinder}
+            onClose={() => setShowImageFinder(false)}
+            onAddImage={(dataUrl: string, mimeType: string, name?: string) => {
+              void addImageToCanvas(dataUrl, mimeType, name ?? "finder-image");
+              setLatestFinderImage({ dataUrl, name: name ?? "finder-image" });
+            }}
+          />
+        )}
 
         <div className="flex h-full items-center justify-center px-[300px] pb-[88px]">
           <div className={`mx-auto ${canvasAspectClass}`}>
@@ -273,7 +387,7 @@ export function StudioPage() {
 
         <Teleprompter visible={showTeleprompter} script={teleprompterScript} onScriptChange={setTeleprompterScript} isRecording={recorder.status === "recording"} />
 
-        <WebcamPiP webcamStream={stream} onEnable={enableWebcam} onDisable={disableWebcam} hidden={isMobile} onVideoRef={setWebcamVideo} />
+        <WebcamPiP webcamStream={stream} onEnable={enableWebcam} onDisable={disableWebcam} hidden={isMobile} onVideoRef={setWebcamVideo} layout={layout} format={format} />
       </section>
 
       {recorder.recordedBlob && isExportOpen && (
