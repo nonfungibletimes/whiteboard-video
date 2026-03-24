@@ -20,6 +20,7 @@ interface RecorderOptions {
   layout: LayoutMode;
   boardCanvas: HTMLCanvasElement | null;
   webcamVideo: HTMLVideoElement | null;
+  processedCanvas?: HTMLCanvasElement | null;
   boardBackground: string;
   countdownSeconds: 0 | 3 | 5;
   recordingQuality: RecordingQuality;
@@ -37,6 +38,7 @@ export function useWhiteboardRecorder({
   recordingQuality,
   captionsEnabled,
   captionText,
+  processedCanvas,
 }: RecorderOptions) {
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [countdown, setCountdown] = useState(0);
@@ -64,25 +66,27 @@ export function useWhiteboardRecorder({
     ctx.fillStyle = boardBackground;
     ctx.fillRect(0, 0, width, height);
 
-    if (layout === "side-by-side" && webcamVideo) {
+    const cameraSource = processedCanvas ?? webcamVideo;
+
+    if (layout === "side-by-side" && cameraSource) {
       if (format === "portrait") {
         // Portrait side-by-side: stack vertically (board on top, webcam on bottom)
         const topH = Math.floor(height * 0.65);
         ctx.drawImage(boardCanvas, 0, 0, width, topH);
         ctx.fillStyle = "#f3f4f6";
         ctx.fillRect(0, topH, width, height - topH);
-        ctx.drawImage(webcamVideo, 16, topH + 16, width - 32, height - topH - 32);
+        ctx.drawImage(cameraSource, 16, topH + 16, width - 32, height - topH - 32);
       } else {
         // Landscape/square: side by side horizontally
         const leftW = Math.floor(width * 0.65);
         ctx.drawImage(boardCanvas, 0, 0, leftW, height);
         ctx.fillStyle = "#f3f4f6";
         ctx.fillRect(leftW, 0, width - leftW, height);
-        ctx.drawImage(webcamVideo, leftW + 16, 16, width - leftW - 32, height - 32);
+        ctx.drawImage(cameraSource, leftW + 16, 16, width - leftW - 32, height - 32);
       }
     } else {
       ctx.drawImage(boardCanvas, 0, 0, width, height);
-      if (layout !== "board-only" && webcamVideo) {
+      if (layout !== "board-only" && cameraSource) {
         // Scale PiP relative to the smaller dimension so it's visible in all orientations
         const minDim = Math.min(width, height);
         const pipW = Math.round(minDim * (format === "landscape" ? 0.28 : 0.38));
@@ -105,7 +109,7 @@ export function useWhiteboardRecorder({
         ctx.beginPath();
         ctx.roundRect(pos.x, pos.y, pipW, pipH, 12);
         ctx.clip();
-        ctx.drawImage(webcamVideo, pos.x, pos.y, pipW, pipH);
+        ctx.drawImage(cameraSource, pos.x, pos.y, pipW, pipH);
         ctx.restore();
 
         // Border
@@ -138,7 +142,7 @@ export function useWhiteboardRecorder({
     }
 
     animationRef.current = requestAnimationFrame(drawFrame);
-  }, [boardBackground, boardCanvas, captionText, captionsEnabled, dimensions, layout, webcamVideo]);
+  }, [boardBackground, boardCanvas, captionText, captionsEnabled, dimensions, layout, webcamVideo, processedCanvas]);
 
   const startRecorder = useCallback(async () => {
     if (!boardCanvas) {

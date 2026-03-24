@@ -23,6 +23,7 @@ export function TemplateManager({
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Template name" />
         <Button
           size="sm"
+          className="min-h-11 min-w-11"
           onClick={() => {
             if (!name.trim()) return;
             onSave(name.trim());
@@ -40,7 +41,7 @@ export function TemplateManager({
             <button onClick={() => onLoad(template.id)} className="truncate text-left font-medium text-slate-700 hover:text-slate-900">
               {template.name}
             </button>
-            <button onClick={() => onDelete(template.id)} className="text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+            <button onClick={() => onDelete(template.id)} className="min-h-8 min-w-8 text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
           </div>
         ))}
       </div>

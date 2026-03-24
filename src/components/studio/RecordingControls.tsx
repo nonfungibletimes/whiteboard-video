@@ -17,19 +17,19 @@ export function RecordingControls({ status, countdown, duration, onStart, onPaus
   return (
     <div className="flex items-center gap-2">
       {(status === "idle" || status === "stopped") && (
-        <Button variant="success" onClick={onStart}><Video className="mr-2 h-4 w-4" />Start</Button>
+        <Button variant="success" onClick={onStart} className="min-h-11 px-3 sm:px-4"><Video className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Start</span></Button>
       )}
       {status === "recording" && (
-        <Button variant="secondary" onClick={onPause}><Pause className="mr-2 h-4 w-4" />Pause</Button>
+        <Button variant="secondary" onClick={onPause} className="min-h-11 px-3 sm:px-4"><Pause className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Pause</span></Button>
       )}
       {status === "paused" && (
-        <Button onClick={onResume}><Play className="mr-2 h-4 w-4" />Resume</Button>
+        <Button onClick={onResume} className="min-h-11 px-3 sm:px-4"><Play className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Resume</span></Button>
       )}
       {(status === "recording" || status === "paused") && (
-        <Button variant="destructive" onClick={onStop}><Square className="mr-2 h-4 w-4" />Stop</Button>
+        <Button variant="destructive" onClick={onStop} className="min-h-11 px-3 sm:px-4"><Square className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Stop</span></Button>
       )}
 
-      <div className="ml-2 min-w-[88px] rounded-md border border-slate-200 bg-white px-3 py-2 text-center text-sm font-medium">
+      <div className="ml-1 min-w-[88px] rounded-md border border-slate-200 bg-white px-2 py-2 text-center text-xs font-medium sm:ml-2 sm:px-3 sm:text-sm">
         {status === "countdown" ? `Starting in ${countdown}` : formatSeconds(duration)}
       </div>
     </div>

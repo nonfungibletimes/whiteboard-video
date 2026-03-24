@@ -45,7 +45,7 @@ export function Teleprompter({ visible, script, onScriptChange, isRecording }: P
   if (!visible) return null;
 
   return (
-    <div className="absolute right-4 top-4 z-40 h-[70%] w-[340px] rounded-xl border border-slate-600/60 bg-slate-950/70 p-3 text-white shadow-2xl backdrop-blur-md">
+    <div className="absolute left-2 right-2 top-2 z-40 h-[65%] rounded-xl border border-slate-600/60 bg-slate-950/70 p-3 text-white shadow-2xl backdrop-blur-md sm:left-auto sm:right-4 sm:top-4 sm:h-[70%] sm:w-[340px]">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold">Teleprompter</p>
         <Button size="sm" variant="secondary" onClick={() => setIsPlaying((prev) => !prev)}>

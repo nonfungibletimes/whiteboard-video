@@ -107,7 +107,7 @@ export const WhiteboardCanvas = memo(function WhiteboardCanvas({
   }), [backgroundColor, initialData, penColor, penThickness, showGrid]);
 
   return (
-    <div ref={wrapRef} className="h-full w-full" onMouseEnter={reportCanvas}>
+    <div ref={wrapRef} className="h-full w-full touch-none" onMouseEnter={reportCanvas}>
       <Excalidraw
         theme={theme}
         initialData={mergedInitialData as never}

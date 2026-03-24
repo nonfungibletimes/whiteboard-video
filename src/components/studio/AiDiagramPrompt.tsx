@@ -156,9 +156,9 @@ export function AiDiagramPrompt({ onGenerateElements }: Props) {
   const canGenerate = useMemo(() => prompt.trim().length > 0, [prompt]);
 
   return (
-    <div className="pointer-events-auto absolute left-1/2 top-4 z-30 w-[min(92%,780px)] -translate-x-1/2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
-      <div className="flex items-center gap-2">
-        <Sparkles className="ml-2 h-4 w-4 text-indigo-500" />
+    <div className="pointer-events-auto absolute left-1/2 top-3 z-30 w-[min(94%,780px)] -translate-x-1/2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Sparkles className="ml-2 hidden h-4 w-4 text-indigo-500 sm:block" />
         <Input
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -170,6 +170,7 @@ export function AiDiagramPrompt({ onGenerateElements }: Props) {
         <Button
           onClick={() => onGenerateElements(generate(prompt))}
           disabled={!canGenerate}
+          className="w-full sm:w-auto"
         >
           Generate
         </Button>

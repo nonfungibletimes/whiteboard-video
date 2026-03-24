@@ -1,4 +1,4 @@
-import { Captions, Image as ImageIcon, Link2, MonitorPlay, Wand2 } from "lucide-react";
+import { Captions, Image as ImageIcon, Link2, Menu, MonitorPlay, Settings2, Wand2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WhiteboardCanvas } from "@/components/studio/WhiteboardCanvas";
@@ -9,8 +9,10 @@ import { WebcamPiP } from "@/components/studio/WebcamPiP";
 import { TemplateManager } from "@/components/studio/TemplateManager";
 import { ExportPanel } from "@/components/studio/ExportPanel";
 import { StudioSettingsPanel, type PenThickness, type RecordingQuality } from "@/components/studio/StudioSettingsPanel";
+import { CameraEffectsPanel } from "@/components/studio/CameraEffectsPanel";
 import { useWebcam } from "@/hooks/use-webcam";
 import { useWhiteboardRecorder } from "@/hooks/use-whiteboard-recorder";
+import { useCameraEffects, type CameraEffect } from "@/hooks/use-camera-effects";
 import type { LayoutMode, OutputFormat, SavedTemplate } from "@/types/studio";
 import { Button } from "@/components/ui/button";
 import { Teleprompter } from "@/components/studio/Teleprompter";
@@ -20,6 +22,7 @@ import { SlideNav, type SlideItem } from "@/components/studio/SlideNav";
 import { AiDiagramPrompt } from "@/components/studio/AiDiagramPrompt";
 import { ImageFinder } from "@/components/studio/ImageFinder";
 import { useBackgroundRemoval } from "@/hooks/use-background-removal";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 
 const TEMPLATE_KEY = "wb-video-templates-v1";
 const SLIDES_KEY = "wb-video-slides-v1";
@@ -76,6 +79,10 @@ export function StudioPage() {
   const [showGrid, setShowGrid] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState<0 | 3 | 5>(3);
   const [recordingQuality, setRecordingQuality] = useState<RecordingQuality>("standard");
+  const [cameraEffect, setCameraEffect] = useState<CameraEffect>("none");
+  const [cameraBgColor, setCameraBgColor] = useState("#00FF00");
+  const [cameraBgImageUrl, setCameraBgImageUrl] = useState<string | undefined>(undefined);
+  const [cameraBlurRadius, setCameraBlurRadius] = useState(15);
   const [isExportOpen, setIsExportOpen] = useState(true);
 
   const [showTeleprompter, setShowTeleprompter] = useState(false);
@@ -83,6 +90,8 @@ export function StudioPage() {
   const [captionsEnabled, setCaptionsEnabled] = useState(false);
   const [showImageFinder, setShowImageFinder] = useState(false);
   const [latestFinderImage, setLatestFinderImage] = useState<{ dataUrl: string; name: string } | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<"templates" | "settings" | null>(null);
+  const [showMobileTools, setShowMobileTools] = useState(false);
 
   const [slides, setSlides] = useState<SlideItem[]>(() => loadSlides());
   const [activeSlideId, setActiveSlideId] = useState<string>("");
@@ -95,14 +104,23 @@ export function StudioPage() {
   const excalidrawApiRef = useRef<any>(null);
 
   const { transcript, isSupported: captionsSupported, start: startCaptions, stop: stopCaptions } = useSpeechRecognition();
+  const { isMobile, isTablet } = useBreakpoint();
   const { stream, enableWebcam, disableWebcam } = useWebcam();
   const { removeBackground, isProcessing: isRemovingLatestBg } = useBackgroundRemoval();
+  const { processedCanvas, isLoading: effectsLoading, error: effectsError } = useCameraEffects({
+    effect: stream ? cameraEffect : "none",
+    webcamVideo,
+    bgColor: cameraBgColor,
+    bgImageUrl: cameraBgImageUrl,
+    blurRadius: cameraBlurRadius,
+  });
 
   const recorder = useWhiteboardRecorder({
     format,
     layout,
     boardCanvas,
     webcamVideo,
+    processedCanvas: cameraEffect !== "none" ? processedCanvas : null,
     boardBackground: backgroundColor,
     countdownSeconds,
     recordingQuality,
@@ -129,6 +147,13 @@ export function StudioPage() {
   useEffect(() => {
     if (recorder.recordedBlob) setIsExportOpen(true);
   }, [recorder.recordedBlob]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobilePanel(null);
+      setShowMobileTools(false);
+    }
+  }, [isMobile]);
 
   const persistCurrentSlide = useCallback(() => {
     setSlides((prev) => prev.map((slide) => (slide.id === activeSlideId ? { ...slide, ...sceneDataRef.current } : slide)));
@@ -289,35 +314,44 @@ export function StudioPage() {
     setLatestFinderImage({ dataUrl, name: `${latestFinderImage.name.replace(/\.[^/.]+$/, "")}-no-bg.png` });
   }, [latestFinderImage, removeBackground]);
 
-  const isMobile = window.matchMedia("(max-width: 768px)").matches;
   const canvasAspectClass = useMemo(() => FORMAT_CLASS[format], [format]);
 
   return (
     <main className="h-screen overflow-hidden bg-slate-100 text-slate-900">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="font-semibold">WhiteBoard Video</Link>
+      <header className="space-y-2 border-b border-slate-200 bg-white px-3 py-2 md:px-4 md:py-3">
+        <div className="flex items-center justify-between gap-2">
+          <Link to="/" className="truncate text-sm font-semibold sm:text-base">WhiteBoard Video</Link>
+          {isMobile && (
+            <Button variant="outline" size="sm" className="min-h-11 min-w-11" onClick={() => setShowMobileTools((p) => !p)} aria-label="Toggle tools">
+              <Menu className="h-4 w-4" />
+            </Button>
+          )}
+          <RecordingControls
+            status={recorder.status}
+            countdown={recorder.countdown}
+            duration={recorder.duration}
+            onStart={recorder.startRecorder}
+            onPause={recorder.pauseRecorder}
+            onResume={recorder.resumeRecorder}
+            onStop={recorder.stopRecorder}
+          />
+        </div>
+
+        <div className={`flex items-center gap-2 overflow-x-auto pb-1 ${isMobile && !showMobileTools ? "hidden" : ""}`}>
           <FormatSelector value={format} onChange={setFormat} />
           <LayoutSelector value={layout} onChange={setLayout} />
-          <Button variant="outline" size="sm" onClick={() => setTheme((prev) => (prev === "light" ? "dark" : "light"))}>{theme === "light" ? "Dark UI" : "Light UI"}</Button>
-          <Button variant={showImageFinder ? "default" : "outline"} size="sm" onClick={() => setShowImageFinder((p) => !p)}><ImageIcon className="mr-1 h-4 w-4" />Images</Button>
-          <Button variant={showTeleprompter ? "default" : "outline"} size="sm" onClick={() => setShowTeleprompter((p) => !p)}><MonitorPlay className="mr-1 h-4 w-4" />Teleprompter</Button>
-          <Button variant={captionsEnabled ? "default" : "outline"} size="sm" disabled={!captionsSupported} onClick={() => setCaptionsEnabled((p) => !p)}><Captions className="mr-1 h-4 w-4" />CC</Button>
-          <Button variant="outline" size="sm" onClick={persistCurrentSlide}><Link2 className="mr-1 h-4 w-4" />Save Slide</Button>
+          <Button variant="outline" size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" onClick={() => setTheme((prev) => (prev === "light" ? "dark" : "light"))}>{theme === "light" ? "Dark UI" : "Light UI"}</Button>
+          <Button variant={showImageFinder ? "default" : "outline"} size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" onClick={() => setShowImageFinder((p) => !p)}><ImageIcon className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Images</span></Button>
+          <Button variant={showTeleprompter ? "default" : "outline"} size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" onClick={() => setShowTeleprompter((p) => !p)}><MonitorPlay className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Teleprompter</span></Button>
+          <Button variant={captionsEnabled ? "default" : "outline"} size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" disabled={!captionsSupported} onClick={() => setCaptionsEnabled((p) => !p)}><Captions className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">CC</span></Button>
+          <Button variant="outline" size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" onClick={persistCurrentSlide}><Link2 className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Save Slide</span></Button>
+          {isMobile && <Button variant="outline" className="min-h-11 shrink-0" onClick={() => setMobilePanel("templates")}>Templates</Button>}
+          {isMobile && <Button variant="outline" className="min-h-11 shrink-0" onClick={() => setMobilePanel("settings")}><Settings2 className="mr-1 h-4 w-4" />Settings</Button>}
         </div>
-        <RecordingControls
-          status={recorder.status}
-          countdown={recorder.countdown}
-          duration={recorder.duration}
-          onStart={recorder.startRecorder}
-          onPause={recorder.pauseRecorder}
-          onResume={recorder.resumeRecorder}
-          onStop={recorder.stopRecorder}
-        />
       </header>
 
-      <section className="relative h-[calc(100vh-65px)] p-4">
-        <div className="absolute inset-y-4 left-8 z-30 w-[280px] space-y-3">
+      <section className="relative h-[calc(100vh-122px)] p-2 sm:p-4">
+        {!isMobile && <div className="absolute inset-y-4 left-4 z-30 w-[220px] space-y-3 lg:left-8 lg:w-[280px]">
           <TemplateManager templates={templates} onSave={saveTemplate} onLoad={loadTemplate} onDelete={deleteTemplate} />
           <StudioSettingsPanel
             penColor={penColor}
@@ -333,14 +367,72 @@ export function StudioPage() {
             recordingQuality={recordingQuality}
             onRecordingQualityChange={setRecordingQuality}
           />
+          {stream && (
+            <CameraEffectsPanel
+              effect={cameraEffect}
+              onEffectChange={setCameraEffect}
+              bgColor={cameraBgColor}
+              onBgColorChange={setCameraBgColor}
+              bgImageUrl={cameraBgImageUrl}
+              onBgImageUrlChange={setCameraBgImageUrl}
+              blurRadius={cameraBlurRadius}
+              onBlurRadiusChange={setCameraBlurRadius}
+              isLoading={effectsLoading}
+            />
+          )}
           {latestFinderImage && (
-            <Button size="sm" variant="outline" className="w-full" onClick={() => void removeBgFromLatest()} disabled={isRemovingLatestBg}>
+            <Button size="sm" variant="outline" className="w-full min-h-11" onClick={() => void removeBgFromLatest()} disabled={isRemovingLatestBg}>
               <Wand2 className="mr-2 h-4 w-4" />
               {isRemovingLatestBg ? "Removing background..." : "Remove BG (latest image)"}
             </Button>
           )}
+          {effectsError && <p className="rounded bg-amber-50 p-2 text-xs text-amber-700">{effectsError}</p>}
           {recorder.error && <p className="rounded bg-red-50 p-2 text-xs text-red-600">{recorder.error}</p>}
-        </div>
+        </div>}
+
+        {isMobile && mobilePanel && (
+          <div className="fixed inset-0 z-50 bg-slate-950/40 p-2">
+            <div className="h-full overflow-y-auto rounded-2xl bg-white p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="font-semibold">{mobilePanel === "templates" ? "Templates" : "Settings"}</p>
+                <Button variant="ghost" className="min-h-11 min-w-11" onClick={() => setMobilePanel(null)}>Close</Button>
+              </div>
+              {mobilePanel === "templates" ? (
+                <TemplateManager templates={templates} onSave={saveTemplate} onLoad={loadTemplate} onDelete={deleteTemplate} />
+              ) : (
+                <div className="space-y-3">
+                  <StudioSettingsPanel
+                    penColor={penColor}
+                    onPenColorChange={setPenColor}
+                    penThickness={penThickness}
+                    onPenThicknessChange={setPenThickness}
+                    backgroundColor={backgroundColor}
+                    onBackgroundColorChange={setBackgroundColor}
+                    showGrid={showGrid}
+                    onShowGridChange={setShowGrid}
+                    countdownSeconds={countdownSeconds}
+                    onCountdownChange={setCountdownSeconds}
+                    recordingQuality={recordingQuality}
+                    onRecordingQualityChange={setRecordingQuality}
+                  />
+                  {stream && (
+                    <CameraEffectsPanel
+                      effect={cameraEffect}
+                      onEffectChange={setCameraEffect}
+                      bgColor={cameraBgColor}
+                      onBgColorChange={setCameraBgColor}
+                      bgImageUrl={cameraBgImageUrl}
+                      onBgImageUrlChange={setCameraBgImageUrl}
+                      blurRadius={cameraBlurRadius}
+                      onBlurRadiusChange={setCameraBlurRadius}
+                      isLoading={effectsLoading}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {showImageFinder && (
           <ImageFinder
@@ -353,7 +445,7 @@ export function StudioPage() {
           />
         )}
 
-        <div className="flex h-full items-center justify-center px-[300px] pb-[88px]">
+        <div className="flex h-full items-center justify-center px-2 pb-[154px] sm:px-4 md:px-8 lg:px-[300px]">
           <div className={`mx-auto ${canvasAspectClass}`}>
             <div className="relative h-full overflow-hidden rounded-xl border border-slate-200 bg-white">
               <AiDiagramPrompt onGenerateElements={appendGeneratedElements} />
@@ -387,11 +479,19 @@ export function StudioPage() {
 
         <Teleprompter visible={showTeleprompter} script={teleprompterScript} onScriptChange={setTeleprompterScript} isRecording={recorder.status === "recording"} />
 
-        <WebcamPiP webcamStream={stream} onEnable={enableWebcam} onDisable={disableWebcam} hidden={isMobile} onVideoRef={setWebcamVideo} layout={layout} format={format} />
+        <WebcamPiP
+          webcamStream={stream}
+          onEnable={enableWebcam}
+          onDisable={disableWebcam}
+          onVideoRef={setWebcamVideo}
+          layout={layout}
+          format={format}
+          processedCanvas={cameraEffect !== "none" ? processedCanvas : null}
+        />
       </section>
 
       {recorder.recordedBlob && isExportOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-2 sm:p-4">
           <ExportPanel blob={recorder.recordedBlob} onClose={() => setIsExportOpen(false)} onDownloadWebm={() => recorder.downloadRecording("webm")} onDownloadMp4={() => recorder.downloadRecording("mp4")} />
         </div>
       )}

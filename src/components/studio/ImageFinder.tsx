@@ -132,7 +132,7 @@ export function ImageFinder({ visible, onClose, onAddImage }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-      <div className="relative max-h-[80vh] w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h3 className="font-semibold text-slate-900">Images & Icons</h3>
           <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
@@ -150,7 +150,7 @@ export function ImageFinder({ visible, onClose, onAddImage }: Props) {
           ))}
         </div>
 
-        <div className="max-h-[50vh] overflow-y-auto p-4">
+        <div className="max-h-[65vh] overflow-y-auto p-3 sm:p-4">
           {tab === "icons" && (
             <div className="space-y-2">
               <input
@@ -159,7 +159,7 @@ export function ImageFinder({ visible, onClose, onAddImage }: Props) {
                 placeholder="Search free images..."
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               />
-              <div className="grid grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
                 {BUILT_IN_ICONS.filter((icon) => icon.name.toLowerCase().includes(iconSearch.toLowerCase().trim())).map((icon) => (
                   <button
                     key={icon.name}
@@ -208,7 +208,7 @@ export function ImageFinder({ visible, onClose, onAddImage }: Props) {
           {images.length > 0 && (
             <div className="mt-4">
               <h4 className="mb-2 text-xs font-semibold uppercase text-slate-400">Your Images</h4>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                 {images.map((item) => (
                   <div key={item.id} className="group relative overflow-hidden rounded-lg border border-slate-200">
                     <img src={item.dataUrl} alt={item.name} className="h-24 w-full object-contain bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZjFmNWY5Ii8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmMWY1ZjkiLz48L3N2Zz4=')]" />

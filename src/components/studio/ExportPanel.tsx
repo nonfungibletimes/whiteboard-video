@@ -25,18 +25,18 @@ export function ExportPanel({
   if (!blob || !previewUrl) return null;
 
   return (
-    <Card className="w-full max-w-2xl border-emerald-200 shadow-xl">
-      <CardHeader className="flex flex-row items-start justify-between gap-3">
+    <Card className="w-full max-w-2xl border-emerald-200 shadow-xl max-h-[90vh] overflow-y-auto">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 p-4 sm:p-6">
         <CardTitle className="text-lg">Recording ready</CardTitle>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose} aria-label="Close export panel">
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
         <video controls className="w-full rounded-lg bg-black" src={previewUrl} />
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={onDownloadWebm}><Download className="mr-2 h-4 w-4" />Download WebM</Button>
-          <Button variant="secondary" onClick={onDownloadMp4}><Download className="mr-2 h-4 w-4" />Download MP4*</Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button className="min-h-11" onClick={onDownloadWebm}><Download className="mr-2 h-4 w-4" />Download WebM</Button>
+          <Button className="min-h-11" variant="secondary" onClick={onDownloadMp4}><Download className="mr-2 h-4 w-4" />Download MP4*</Button>
         </div>
         <p className="text-xs text-slate-500">* MP4 download uses the same browser-encoded stream and may remain WebM container in some browsers.</p>
 

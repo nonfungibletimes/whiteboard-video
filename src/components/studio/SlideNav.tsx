@@ -16,27 +16,28 @@ interface Props {
   onDelete: (id: string) => void;
   onMoveLeft: (id: string) => void;
   onMoveRight: (id: string) => void;
+  className?: string;
 }
 
-export function SlideNav({ slides, activeSlideId, onAdd, onSelect, onDelete, onMoveLeft, onMoveRight }: Props) {
+export function SlideNav({ slides, activeSlideId, onAdd, onSelect, onDelete, onMoveLeft, onMoveRight, className = "" }: Props) {
   return (
-    <div className="absolute inset-x-8 bottom-4 z-35 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
+    <div className={`absolute inset-x-2 bottom-20 z-35 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur md:inset-x-8 md:bottom-4 ${className}`}>
       <div className="flex items-center gap-2 overflow-x-auto">
         {slides.map((slide, index) => {
           const active = slide.id === activeSlideId;
           return (
             <div
               key={slide.id}
-              className={`min-w-[140px] rounded-lg border p-2 text-xs ${active ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-slate-50"}`}
+              className={`min-w-[120px] rounded-lg border p-2 text-xs sm:min-w-[140px] ${active ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-slate-50"}`}
             >
               <button className="mb-2 w-full text-left font-semibold" onClick={() => onSelect(slide.id)}>
                 Slide {index + 1}
               </button>
               <p className="truncate text-[11px] text-slate-500">{slide.elements.length} elements</p>
               <div className="mt-2 flex gap-1">
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => onMoveLeft(slide.id)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => onMoveRight(slide.id)}><ChevronRight className="h-3.5 w-3.5" /></Button>
-                <Button size="sm" variant="ghost" className="ml-auto h-6 w-6 p-0 text-red-500" onClick={() => onDelete(slide.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => onMoveLeft(slide.id)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => onMoveRight(slide.id)}><ChevronRight className="h-3.5 w-3.5" /></Button>
+                <Button size="sm" variant="ghost" className="ml-auto h-8 w-8 p-0 text-red-500" onClick={() => onDelete(slide.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
               </div>
             </div>
           );
