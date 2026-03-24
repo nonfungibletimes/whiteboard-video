@@ -34,7 +34,7 @@ export function StudioSettingsPanel({
   recordingQuality,
   onRecordingQualityChange,
 }: Props) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3">

@@ -26,8 +26,8 @@ async function getSegmenter() {
   return ImageSegmenter.createFromOptions(vision, {
     baseOptions: { modelAssetPath: MODEL_URL },
     runningMode: "VIDEO",
-    outputCategoryMask: true,
-    outputConfidenceMasks: false,
+    outputCategoryMask: false,
+    outputConfidenceMasks: true,
   });
 }
 
@@ -66,10 +66,10 @@ export function useCameraEffects({
 
     const outputCanvas = document.createElement("canvas");
     const outputCtx = outputCanvas.getContext("2d", { willReadFrequently: false });
-    const stagingCanvas = document.createElement("canvas");
-    const stagingCtx = stagingCanvas.getContext("2d", { willReadFrequently: true });
+    const personCanvas = document.createElement("canvas");
+    const personCtx = personCanvas.getContext("2d", { willReadFrequently: true });
 
-    if (!outputCtx || !stagingCtx) {
+    if (!outputCtx || !personCtx) {
       setError("Canvas is not supported in this browser.");
       setProcessedCanvas(null);
       return;
@@ -88,15 +88,17 @@ export function useCameraEffects({
       return;
     }
 
-    const drawEffect = (maskData: Uint8Array, width: number, height: number) => {
+    // Uses confidence mask (float32 array, 0.0 = background, 1.0 = person)
+    // Threshold at 0.5 for person detection
+    const drawEffect = (confidenceMask: Float32Array, width: number, height: number) => {
       outputCanvas.width = width;
       outputCanvas.height = height;
-      stagingCanvas.width = width;
-      stagingCanvas.height = height;
+      personCanvas.width = width;
+      personCanvas.height = height;
 
       outputCtx.clearRect(0, 0, width, height);
-      stagingCtx.clearRect(0, 0, width, height);
 
+      // Step 1: Draw the background layer
       if (effect === "remove") {
         outputCtx.fillStyle = bgColor;
         outputCtx.fillRect(0, 0, width, height);
@@ -118,17 +120,29 @@ export function useCameraEffects({
         outputCtx.filter = "none";
       }
 
-      stagingCtx.drawImage(webcamVideo, 0, 0, width, height);
-      const frame = stagingCtx.getImageData(0, 0, width, height);
+      // Step 2: Draw person layer — webcam frame with background pixels made transparent
+      personCtx.clearRect(0, 0, width, height);
+      personCtx.drawImage(webcamVideo, 0, 0, width, height);
+      const frame = personCtx.getImageData(0, 0, width, height);
       const px = frame.data;
-      for (let i = 0; i < maskData.length; i += 1) {
-        const person = maskData[i] > 0;
-        if (!person) {
+
+      for (let i = 0; i < confidenceMask.length; i++) {
+        // confidenceMask[i] is 0.0-1.0 where higher = more likely person
+        // Make background pixels transparent, keep person pixels opaque
+        const personConfidence = confidenceMask[i];
+        if (personConfidence < 0.5) {
+          // This is background — make transparent
           px[i * 4 + 3] = 0;
+        } else {
+          // Soft edge: use confidence for smooth blending near edges
+          px[i * 4 + 3] = Math.round(Math.min(1, personConfidence * 1.5) * 255);
         }
       }
-      stagingCtx.putImageData(frame, 0, 0);
-      outputCtx.drawImage(stagingCanvas, 0, 0, width, height);
+
+      personCtx.putImageData(frame, 0, 0);
+
+      // Step 3: Composite person on top of background
+      outputCtx.drawImage(personCanvas, 0, 0, width, height);
     };
 
     const loop = async () => {
@@ -141,18 +155,26 @@ export function useCameraEffects({
       }
       lastFrameTimeRef.current = now;
 
-      const width = webcamVideo.videoWidth || 1280;
-      const height = webcamVideo.videoHeight || 720;
+      const width = webcamVideo.videoWidth || 640;
+      const height = webcamVideo.videoHeight || 480;
+
+      if (width <= 1 || height <= 1) {
+        rafRef.current = requestAnimationFrame(() => void loop());
+        return;
+      }
 
       try {
         segmenter.segmentForVideo(webcamVideo, now, (result) => {
-          if (!active || !result.categoryMask) return;
-          const mask = result.categoryMask.getAsUint8Array();
-          drawEffect(mask, width, height);
+          if (!active) return;
+          // confidenceMasks[0] is the person confidence mask
+          const masks = result.confidenceMasks;
+          if (!masks || masks.length === 0) return;
+          const personMask = masks[0].getAsFloat32Array();
+          drawEffect(personMask, width, height);
         });
       } catch (err) {
         if (active) {
-          setError(err instanceof Error ? err.message : "Failed to process camera effect.");
+          console.warn("Camera effect frame error:", err);
         }
       }
 

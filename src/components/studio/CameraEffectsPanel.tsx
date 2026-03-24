@@ -40,7 +40,7 @@ export function CameraEffectsPanel({
   onBlurRadiusChange,
   isLoading,
 }: Props) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const isBuiltinSelected = useMemo(() => BUILTIN_BACKGROUNDS.some((b) => b.value === bgImageUrl), [bgImageUrl]);
 

@@ -1,5 +1,5 @@
 import { Excalidraw, MainMenu } from "@excalidraw/excalidraw";
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import type { PenThickness } from "@/components/studio/StudioSettingsPanel";
 
 interface Props {
@@ -40,6 +40,9 @@ export const WhiteboardCanvas = memo(function WhiteboardCanvas({
   const onSceneChangeRef = useRef(onSceneChange);
   onSceneChangeRef.current = onSceneChange;
 
+  // Track whether we've done the initial load
+  const hasLoadedInitialRef = useRef(false);
+
   const reportCanvas = useCallback(() => {
     const canvas = wrapRef.current?.querySelector("canvas") as HTMLCanvasElement | null;
     onCanvasReady(canvas);
@@ -60,6 +63,8 @@ export const WhiteboardCanvas = memo(function WhiteboardCanvas({
     });
   }, []);
 
+  // Update settings WITHOUT resetting elements — this is the fix for background
+  // overwriting your drawing
   useEffect(() => {
     const api = excalidrawApiRef.current;
     if (!api) return;
@@ -76,9 +81,17 @@ export const WhiteboardCanvas = memo(function WhiteboardCanvas({
     });
   }, [backgroundColor, penColor, penThickness, showGrid]);
 
+  // Load initial data / slide changes — ONLY when initialData actually changes
+  // (not when pen color or background changes!)
   useEffect(() => {
     const api = excalidrawApiRef.current;
     if (!api || !initialData) return;
+
+    // Skip if this is just the first render (Excalidraw handles that via initialData prop)
+    if (!hasLoadedInitialRef.current) {
+      hasLoadedInitialRef.current = true;
+      return;
+    }
 
     const currentAppState = api.getAppState?.() ?? {};
     api.updateScene?.({
@@ -86,31 +99,27 @@ export const WhiteboardCanvas = memo(function WhiteboardCanvas({
       appState: {
         ...currentAppState,
         ...(initialData.appState ?? {}),
-        currentItemStrokeColor: penColor,
-        currentItemStrokeWidth: THICKNESS_VALUE[penThickness],
         viewBackgroundColor: backgroundColor,
-        gridSize: showGrid ? 20 : null,
       },
       files: initialData.files ?? {},
     });
-  }, [backgroundColor, initialData, penColor, penThickness, showGrid]);
-
-  const mergedInitialData = useMemo(() => ({
-    ...(initialData ?? { elements: [] }),
-    appState: {
-      ...(initialData?.appState ?? {}),
-      currentItemStrokeColor: penColor,
-      currentItemStrokeWidth: THICKNESS_VALUE[penThickness],
-      viewBackgroundColor: backgroundColor,
-      gridSize: showGrid ? 20 : null,
-    },
-  }), [backgroundColor, initialData, penColor, penThickness, showGrid]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]); // Only re-run when initialData changes (slide switch, template load)
 
   return (
     <div ref={wrapRef} className="h-full w-full touch-none" onMouseEnter={reportCanvas}>
       <Excalidraw
         theme={theme}
-        initialData={mergedInitialData as never}
+        initialData={{
+          ...(initialData ?? { elements: [] }),
+          appState: {
+            ...(initialData?.appState ?? {}),
+            currentItemStrokeColor: penColor,
+            currentItemStrokeWidth: THICKNESS_VALUE[penThickness],
+            viewBackgroundColor: backgroundColor,
+            gridSize: showGrid ? 20 : null,
+          },
+        } as never}
         onChange={handleChange}
         excalidrawAPI={handleApiReady}
       >
