@@ -1,5 +1,5 @@
 import { Excalidraw, MainMenu } from "@excalidraw/excalidraw";
-import { useCallback, useRef } from "react";
+import { memo, useCallback, useRef } from "react";
 
 interface Props {
   theme: "light" | "dark";
@@ -12,26 +12,31 @@ interface Props {
   };
 }
 
-export function WhiteboardCanvas({ theme, onCanvasReady, onSceneChange, initialData }: Props) {
+export const WhiteboardCanvas = memo(function WhiteboardCanvas({ theme, onCanvasReady, onSceneChange, initialData }: Props) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const onSceneChangeRef = useRef(onSceneChange);
+  onSceneChangeRef.current = onSceneChange;
 
   const reportCanvas = useCallback(() => {
     const canvas = wrapRef.current?.querySelector("canvas") as HTMLCanvasElement | null;
     onCanvasReady(canvas);
   }, [onCanvasReady]);
 
+  // Stable onChange handler — avoids re-render loops from Excalidraw's frequent calls
+  const handleChange = useCallback((elements: unknown, appState: unknown, files: unknown) => {
+    onSceneChangeRef.current({
+      elements: elements as unknown[],
+      appState: appState as unknown as Record<string, unknown>,
+      files: files as unknown as Record<string, unknown>,
+    });
+  }, []);
+
   return (
     <div ref={wrapRef} className="h-full w-full" onMouseEnter={reportCanvas}>
       <Excalidraw
         theme={theme}
         initialData={initialData as never}
-        onChange={(elements, appState, files) =>
-          onSceneChange({
-            elements: elements as unknown[],
-            appState: appState as unknown as Record<string, unknown>,
-            files: files as unknown as Record<string, unknown>,
-          })
-        }
+        onChange={handleChange}
       >
         <MainMenu>
           <MainMenu.DefaultItems.ClearCanvas />
@@ -41,4 +46,4 @@ export function WhiteboardCanvas({ theme, onCanvasReady, onSceneChange, initialD
       </Excalidraw>
     </div>
   );
-}
+});

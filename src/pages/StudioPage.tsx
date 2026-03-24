@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { WhiteboardCanvas } from "@/components/studio/WhiteboardCanvas";
 import { FormatSelector } from "@/components/studio/FormatSelector";
 import { LayoutSelector } from "@/components/studio/LayoutSelector";
@@ -14,26 +14,29 @@ import { Button } from "@/components/ui/button";
 
 const TEMPLATE_KEY = "wb-video-templates-v1";
 
+function loadTemplates(): SavedTemplate[] {
+  try {
+    return JSON.parse(localStorage.getItem(TEMPLATE_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
 export function StudioPage() {
   const [format, setFormat] = useState<OutputFormat>("landscape");
   const [layout, setLayout] = useState<LayoutMode>("pip-br");
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [boardCanvas, setBoardCanvas] = useState<HTMLCanvasElement | null>(null);
   const [webcamVideo, setWebcamVideo] = useState<HTMLVideoElement | null>(null);
-  const [sceneData, setSceneData] = useState<{ elements: unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> }>({
+  // Use ref for scene data — it changes constantly from Excalidraw onChange
+  // and must NOT trigger re-renders (that causes infinite update loops)
+  const sceneDataRef = useRef<{ elements: unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> }>({
     elements: [], appState: {}, files: {},
   });
   const [initialData, setInitialData] = useState<{ elements: unknown[]; appState?: Record<string, unknown>; files?: Record<string, unknown> }>();
+  const [templates, setTemplates] = useState<SavedTemplate[]>(loadTemplates);
 
   const { stream, enableWebcam, disableWebcam } = useWebcam();
-
-  const templates = useMemo<SavedTemplate[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(TEMPLATE_KEY) ?? "[]");
-    } catch {
-      return [];
-    }
-  }, [sceneData]);
 
   const recorder = useWhiteboardRecorder({
     format,
@@ -43,20 +46,25 @@ export function StudioPage() {
     boardBackground: theme,
   });
 
+  const handleSceneChange = useCallback((data: { elements: unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> }) => {
+    sceneDataRef.current = data;
+  }, []);
+
   const saveTemplate = (name: string) => {
+    const scene = sceneDataRef.current;
     const next: SavedTemplate[] = [
       {
         id: crypto.randomUUID(),
         name,
         createdAt: Date.now(),
-        elements: sceneData.elements,
-        appState: sceneData.appState,
-        files: sceneData.files,
+        elements: scene.elements,
+        appState: scene.appState,
+        files: scene.files,
       },
       ...templates,
     ].slice(0, 20);
     localStorage.setItem(TEMPLATE_KEY, JSON.stringify(next));
-    setSceneData((v) => ({ ...v }));
+    setTemplates(next);
   };
 
   const loadTemplate = (id: string) => {
@@ -68,7 +76,7 @@ export function StudioPage() {
   const deleteTemplate = (id: string) => {
     const next = templates.filter((t) => t.id !== id);
     localStorage.setItem(TEMPLATE_KEY, JSON.stringify(next));
-    setSceneData((v) => ({ ...v }));
+    setTemplates(next);
   };
 
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
@@ -100,7 +108,7 @@ export function StudioPage() {
           <WhiteboardCanvas
             theme={theme}
             onCanvasReady={setBoardCanvas}
-            onSceneChange={setSceneData}
+            onSceneChange={handleSceneChange}
             initialData={initialData}
           />
         </div>
