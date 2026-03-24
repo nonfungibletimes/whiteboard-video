@@ -1,15 +1,14 @@
 import { useEffect, useRef } from "react";
 import { Camera, CameraOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { LayoutMode, OutputFormat } from "@/types/studio";
 
 const POSITION_CLASSES: Record<string, string> = {
-  "pip-br": "bottom-24 right-2 sm:bottom-4 sm:right-4",
-  "pip-bl": "bottom-24 left-2 sm:bottom-4 sm:left-4",
-  "pip-tr": "top-14 right-2 sm:top-4 sm:right-4",
-  "pip-tl": "top-14 left-2 sm:top-4 sm:left-4",
-  "side-by-side": "bottom-24 right-2 sm:bottom-4 sm:right-4",
-  "board-only": "bottom-24 right-2 sm:bottom-4 sm:right-4",
+  "pip-br": "bottom-[148px] right-2 md:bottom-[100px] md:right-4",
+  "pip-bl": "bottom-[148px] left-2 md:bottom-[100px] md:left-4",
+  "pip-tr": "top-2 right-2 md:top-4 md:right-4",
+  "pip-tl": "top-2 left-2 md:top-4 md:left-4",
+  "side-by-side": "bottom-[148px] right-2 md:bottom-[100px] md:right-4",
+  "board-only": "bottom-[148px] right-2 md:bottom-[100px] md:right-4",
 };
 
 interface Props {
@@ -27,10 +26,8 @@ export function WebcamPiP({
   webcamStream,
   onEnable,
   onDisable,
-  hidden,
   onVideoRef,
   layout = "pip-br",
-  format = "landscape",
   processedCanvas,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -58,27 +55,43 @@ export function WebcamPiP({
     };
   }, [processedCanvas]);
 
-  if (hidden || layout === "board-only") {
-    return null;
-  }
+  // Don't render PiP box in board-only mode when webcam is off
+  if (layout === "board-only" && !webcamStream) return null;
 
-  const posClass = POSITION_CLASSES[layout] ?? "bottom-4 right-4";
-  const sizeClass = format === "portrait" ? "h-[132px] w-[96px] sm:h-[180px] sm:w-[240px]" : "h-[112px] w-[160px] sm:h-[150px] sm:w-[220px]";
+  const posClass = POSITION_CLASSES[layout] ?? POSITION_CLASSES["pip-br"];
+  // Smaller on mobile
+  const sizeClass = "h-[80px] w-[112px] md:h-[120px] md:w-[170px] lg:h-[150px] lg:w-[220px]";
 
   return (
-    <div className={`absolute ${posClass} z-20 overflow-hidden rounded-xl border border-slate-200 bg-white/90 p-2 shadow-xl backdrop-blur`}>
-      {processedCanvas ? (
-        <div ref={canvasMountRef} className={`${sizeClass} rounded-md bg-black`} />
+    <div className={`absolute ${posClass} z-20 overflow-hidden rounded-xl border border-slate-200 bg-white/90 p-1.5 shadow-xl backdrop-blur md:p-2`}>
+      {webcamStream ? (
+        <>
+          {processedCanvas ? (
+            <div ref={canvasMountRef} className={`${sizeClass} rounded-md bg-black`} />
+          ) : (
+            <video ref={videoRef} autoPlay playsInline muted className={`${sizeClass} rounded-md bg-black object-cover`} />
+          )}
+          <button
+            className="mt-1 flex w-full items-center justify-center gap-1 rounded-md bg-slate-100 px-2 py-1.5 text-[11px] font-medium text-slate-600 active:bg-slate-200 md:mt-2 md:py-2 md:text-xs"
+            onClick={onDisable}
+          >
+            <CameraOff className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Disable</span>
+          </button>
+        </>
       ) : (
-        <video ref={videoRef} autoPlay playsInline muted className={`${sizeClass} rounded-md bg-black object-cover`} />
+        <button
+          className="flex h-[80px] w-[112px] flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-slate-300 text-slate-500 active:bg-slate-50 md:h-[120px] md:w-[170px] lg:h-[150px] lg:w-[220px]"
+          onClick={onEnable}
+        >
+          <Camera className="h-6 w-6 md:h-8 md:w-8" />
+          <span className="text-[11px] font-medium md:text-xs">Enable Camera</span>
+        </button>
       )}
-      <div className="mt-2">
-        {webcamStream ? (
-          <Button size="sm" variant="outline" onClick={onDisable} className="min-h-11 w-full"><CameraOff className="mr-2 h-4 w-4" />Disable webcam</Button>
-        ) : (
-          <Button size="sm" onClick={onEnable} className="min-h-11 w-full"><Camera className="mr-2 h-4 w-4" />Enable webcam</Button>
-        )}
-      </div>
+      {/* Hidden video element for the recorder to reference when camera effects are applied */}
+      {webcamStream && processedCanvas && (
+        <video ref={videoRef} autoPlay playsInline muted className="sr-only" />
+      )}
     </div>
   );
 }

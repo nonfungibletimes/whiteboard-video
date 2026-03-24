@@ -1,4 +1,4 @@
-import { Captions, Image as ImageIcon, Link2, Menu, MonitorPlay, Settings2, Wand2 } from "lucide-react";
+import { Camera, CameraOff, Captions, ChevronDown, Image as ImageIcon, Link2, MonitorPlay, Settings2, Sparkles, Wand2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WhiteboardCanvas } from "@/components/studio/WhiteboardCanvas";
@@ -46,9 +46,9 @@ function loadSlides(): SlideItem[] {
 }
 
 const FORMAT_CLASS: Record<OutputFormat, string> = {
-  landscape: "aspect-[16/9] h-full w-auto max-h-full max-w-full",
-  portrait: "aspect-[9/16] h-full w-auto max-h-full max-w-full",
-  square: "aspect-square h-full w-auto max-h-full max-w-full",
+  landscape: "aspect-[16/9] w-full max-w-full",
+  portrait: "aspect-[9/16] h-full max-h-full",
+  square: "aspect-square w-full max-w-full md:h-full md:max-h-full md:w-auto",
 };
 
 function getImageSize(dataUrl: string): Promise<{ width: number; height: number }> {
@@ -67,6 +67,27 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error("Failed to parse blob"));
     reader.readAsDataURL(blob);
   });
+}
+
+/* ---- Drawer overlay for mobile panels ---- */
+function MobileDrawer({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/50" onClick={onClose}>
+      <div className="flex-1" />
+      <div
+        className="max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white px-4 pb-6 pt-3 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-300" />
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-base font-semibold text-slate-900">{title}</p>
+          <Button variant="ghost" size="sm" className="min-h-10 min-w-10" onClick={onClose}>✕</Button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export function StudioPage() {
@@ -90,8 +111,10 @@ export function StudioPage() {
   const [captionsEnabled, setCaptionsEnabled] = useState(false);
   const [showImageFinder, setShowImageFinder] = useState(false);
   const [latestFinderImage, setLatestFinderImage] = useState<{ dataUrl: string; name: string } | null>(null);
-  const [mobilePanel, setMobilePanel] = useState<"templates" | "settings" | null>(null);
-  const [showMobileTools, setShowMobileTools] = useState(false);
+  const [showAiPrompt, setShowAiPrompt] = useState(false);
+
+  // Mobile panel state — only one at a time
+  const [mobilePanel, setMobilePanel] = useState<"tools" | "settings" | "templates" | null>(null);
 
   const [slides, setSlides] = useState<SlideItem[]>(() => loadSlides());
   const [activeSlideId, setActiveSlideId] = useState<string>("");
@@ -148,11 +171,9 @@ export function StudioPage() {
     if (recorder.recordedBlob) setIsExportOpen(true);
   }, [recorder.recordedBlob]);
 
+  // Close mobile panels when resizing to desktop
   useEffect(() => {
-    if (!isMobile) {
-      setMobilePanel(null);
-      setShowMobileTools(false);
-    }
+    if (!isMobile) setMobilePanel(null);
   }, [isMobile]);
 
   const persistCurrentSlide = useCallback(() => {
@@ -255,55 +276,20 @@ export function StudioPage() {
     const now = Date.now();
 
     api.addFiles?.([
-      {
-        id: fileId,
-        dataURL: dataUrl,
-        mimeType,
-        created: now,
-        lastRetrieved: now,
-        size: dataUrl.length,
-        name: name ?? "image",
-      },
+      { id: fileId, dataURL: dataUrl, mimeType, created: now, lastRetrieved: now, size: dataUrl.length, name: name ?? "image" },
     ]);
 
     const existing = (api.getSceneElements?.() ?? []) as Record<string, unknown>[];
-
     const imageElement = {
-      id: crypto.randomUUID(),
-      type: "image",
-      x: 120,
-      y: 120,
-      width: finalWidth,
-      height: finalHeight,
-      angle: 0,
-      strokeColor: "transparent",
-      backgroundColor: "transparent",
-      fillStyle: "solid",
-      strokeWidth: 1,
-      strokeStyle: "solid",
-      roughness: 0,
-      opacity: 100,
-      groupIds: [],
-      frameId: null,
-      roundness: null,
-      seed: Math.floor(Math.random() * 1_000_000),
-      version: 1,
-      versionNonce: Math.floor(Math.random() * 1_000_000),
-      isDeleted: false,
-      boundElements: null,
-      updated: now,
-      link: null,
-      locked: false,
-      fileId,
-      scale: [1, 1],
-      status: "saved",
+      id: crypto.randomUUID(), type: "image", x: 120, y: 120, width: finalWidth, height: finalHeight,
+      angle: 0, strokeColor: "transparent", backgroundColor: "transparent", fillStyle: "solid",
+      strokeWidth: 1, strokeStyle: "solid", roughness: 0, opacity: 100, groupIds: [], frameId: null,
+      roundness: null, seed: Math.floor(Math.random() * 1_000_000), version: 1,
+      versionNonce: Math.floor(Math.random() * 1_000_000), isDeleted: false, boundElements: null,
+      updated: now, link: null, locked: false, fileId, scale: [1, 1], status: "saved",
     };
 
-    api.updateScene?.({
-      elements: [...existing, imageElement],
-      appState: api.getAppState?.() ?? {},
-      files: api.getFiles?.() ?? {},
-    });
+    api.updateScene?.({ elements: [...existing, imageElement], appState: api.getAppState?.() ?? {}, files: api.getFiles?.() ?? {} });
   }, []);
 
   const removeBgFromLatest = useCallback(async () => {
@@ -316,16 +302,17 @@ export function StudioPage() {
 
   const canvasAspectClass = useMemo(() => FORMAT_CLASS[format], [format]);
 
+  // On mobile: how much vertical space does the canvas get?
+  // Header ~56px, bottom bar ~56px, slides ~80px = ~192px of chrome
+  const isRecording = recorder.status === "recording" || recorder.status === "paused";
+
   return (
-    <main className="h-screen overflow-hidden bg-slate-100 text-slate-900">
-      <header className="space-y-2 border-b border-slate-200 bg-white px-3 py-2 md:px-4 md:py-3">
-        <div className="flex items-center justify-between gap-2">
-          <Link to="/" className="truncate text-sm font-semibold sm:text-base">WhiteBoard Video</Link>
-          {isMobile && (
-            <Button variant="outline" size="sm" className="min-h-11 min-w-11" onClick={() => setShowMobileTools((p) => !p)} aria-label="Toggle tools">
-              <Menu className="h-4 w-4" />
-            </Button>
-          )}
+    <main className="flex h-[100dvh] flex-col overflow-hidden bg-slate-100 text-slate-900">
+      {/* ====== HEADER ====== */}
+      <header className="shrink-0 border-b border-slate-200 bg-white px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Link to="/" className="truncate text-sm font-semibold md:text-base">WhiteBoard Video</Link>
+          <div className="flex-1" />
           <RecordingControls
             status={recorder.status}
             countdown={recorder.countdown}
@@ -337,118 +324,61 @@ export function StudioPage() {
           />
         </div>
 
-        <div className={`flex items-center gap-2 overflow-x-auto pb-1 ${isMobile && !showMobileTools ? "hidden" : ""}`}>
-          <FormatSelector value={format} onChange={setFormat} />
-          <LayoutSelector value={layout} onChange={setLayout} />
-          <Button variant="outline" size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" onClick={() => setTheme((prev) => (prev === "light" ? "dark" : "light"))}>{theme === "light" ? "Dark UI" : "Light UI"}</Button>
-          <Button variant={showImageFinder ? "default" : "outline"} size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" onClick={() => setShowImageFinder((p) => !p)}><ImageIcon className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Images</span></Button>
-          <Button variant={showTeleprompter ? "default" : "outline"} size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" onClick={() => setShowTeleprompter((p) => !p)}><MonitorPlay className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Teleprompter</span></Button>
-          <Button variant={captionsEnabled ? "default" : "outline"} size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" disabled={!captionsSupported} onClick={() => setCaptionsEnabled((p) => !p)}><Captions className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">CC</span></Button>
-          <Button variant="outline" size={isTablet ? "sm" : "default"} className="min-h-11 shrink-0" onClick={persistCurrentSlide}><Link2 className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Save Slide</span></Button>
-          {isMobile && <Button variant="outline" className="min-h-11 shrink-0" onClick={() => setMobilePanel("templates")}>Templates</Button>}
-          {isMobile && <Button variant="outline" className="min-h-11 shrink-0" onClick={() => setMobilePanel("settings")}><Settings2 className="mr-1 h-4 w-4" />Settings</Button>}
-        </div>
+        {/* Desktop toolbar row — hidden on mobile */}
+        {!isMobile && (
+          <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-1">
+            <FormatSelector value={format} onChange={setFormat} />
+            <LayoutSelector value={layout} onChange={setLayout} />
+            <Button variant="outline" size={isTablet ? "sm" : "default"} onClick={() => setTheme((p) => (p === "light" ? "dark" : "light"))}>{theme === "light" ? "Dark UI" : "Light UI"}</Button>
+            <Button variant={showAiPrompt ? "default" : "outline"} size={isTablet ? "sm" : "default"} onClick={() => setShowAiPrompt((p) => !p)}><Sparkles className="mr-1 h-4 w-4" />AI Diagram</Button>
+            <Button variant={showImageFinder ? "default" : "outline"} size={isTablet ? "sm" : "default"} onClick={() => setShowImageFinder((p) => !p)}><ImageIcon className="mr-1 h-4 w-4" />Images</Button>
+            <Button variant={showTeleprompter ? "default" : "outline"} size={isTablet ? "sm" : "default"} onClick={() => setShowTeleprompter((p) => !p)}><MonitorPlay className="mr-1 h-4 w-4" />Teleprompter</Button>
+            <Button variant={captionsEnabled ? "default" : "outline"} size={isTablet ? "sm" : "default"} disabled={!captionsSupported} onClick={() => setCaptionsEnabled((p) => !p)}><Captions className="mr-1 h-4 w-4" />CC</Button>
+            <Button variant="outline" size={isTablet ? "sm" : "default"} onClick={persistCurrentSlide}><Link2 className="mr-1 h-4 w-4" />Save Slide</Button>
+          </div>
+        )}
       </header>
 
-      <section className="relative h-[calc(100vh-122px)] p-2 sm:p-4">
-        {!isMobile && <div className="absolute inset-y-4 left-4 z-30 w-[220px] space-y-3 lg:left-8 lg:w-[280px]">
-          <TemplateManager templates={templates} onSave={saveTemplate} onLoad={loadTemplate} onDelete={deleteTemplate} />
-          <StudioSettingsPanel
-            penColor={penColor}
-            onPenColorChange={setPenColor}
-            penThickness={penThickness}
-            onPenThicknessChange={setPenThickness}
-            backgroundColor={backgroundColor}
-            onBackgroundColorChange={setBackgroundColor}
-            showGrid={showGrid}
-            onShowGridChange={setShowGrid}
-            countdownSeconds={countdownSeconds}
-            onCountdownChange={setCountdownSeconds}
-            recordingQuality={recordingQuality}
-            onRecordingQualityChange={setRecordingQuality}
-          />
-          {stream && (
-            <CameraEffectsPanel
-              effect={cameraEffect}
-              onEffectChange={setCameraEffect}
-              bgColor={cameraBgColor}
-              onBgColorChange={setCameraBgColor}
-              bgImageUrl={cameraBgImageUrl}
-              onBgImageUrlChange={setCameraBgImageUrl}
-              blurRadius={cameraBlurRadius}
-              onBlurRadiusChange={setCameraBlurRadius}
-              isLoading={effectsLoading}
+      {/* ====== MAIN AREA ====== */}
+      <section className="relative flex-1 overflow-hidden">
+        {/* Desktop left sidebar */}
+        {!isMobile && (
+          <div className="absolute inset-y-3 left-3 z-30 w-[200px] space-y-3 overflow-y-auto lg:left-6 lg:w-[260px]">
+            <TemplateManager templates={templates} onSave={saveTemplate} onLoad={loadTemplate} onDelete={deleteTemplate} />
+            <StudioSettingsPanel
+              penColor={penColor} onPenColorChange={setPenColor}
+              penThickness={penThickness} onPenThicknessChange={setPenThickness}
+              backgroundColor={backgroundColor} onBackgroundColorChange={setBackgroundColor}
+              showGrid={showGrid} onShowGridChange={setShowGrid}
+              countdownSeconds={countdownSeconds} onCountdownChange={setCountdownSeconds}
+              recordingQuality={recordingQuality} onRecordingQualityChange={setRecordingQuality}
             />
-          )}
-          {latestFinderImage && (
-            <Button size="sm" variant="outline" className="w-full min-h-11" onClick={() => void removeBgFromLatest()} disabled={isRemovingLatestBg}>
-              <Wand2 className="mr-2 h-4 w-4" />
-              {isRemovingLatestBg ? "Removing background..." : "Remove BG (latest image)"}
-            </Button>
-          )}
-          {effectsError && <p className="rounded bg-amber-50 p-2 text-xs text-amber-700">{effectsError}</p>}
-          {recorder.error && <p className="rounded bg-red-50 p-2 text-xs text-red-600">{recorder.error}</p>}
-        </div>}
-
-        {isMobile && mobilePanel && (
-          <div className="fixed inset-0 z-50 bg-slate-950/40 p-2">
-            <div className="h-full overflow-y-auto rounded-2xl bg-white p-3">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="font-semibold">{mobilePanel === "templates" ? "Templates" : "Settings"}</p>
-                <Button variant="ghost" className="min-h-11 min-w-11" onClick={() => setMobilePanel(null)}>Close</Button>
-              </div>
-              {mobilePanel === "templates" ? (
-                <TemplateManager templates={templates} onSave={saveTemplate} onLoad={loadTemplate} onDelete={deleteTemplate} />
-              ) : (
-                <div className="space-y-3">
-                  <StudioSettingsPanel
-                    penColor={penColor}
-                    onPenColorChange={setPenColor}
-                    penThickness={penThickness}
-                    onPenThicknessChange={setPenThickness}
-                    backgroundColor={backgroundColor}
-                    onBackgroundColorChange={setBackgroundColor}
-                    showGrid={showGrid}
-                    onShowGridChange={setShowGrid}
-                    countdownSeconds={countdownSeconds}
-                    onCountdownChange={setCountdownSeconds}
-                    recordingQuality={recordingQuality}
-                    onRecordingQualityChange={setRecordingQuality}
-                  />
-                  {stream && (
-                    <CameraEffectsPanel
-                      effect={cameraEffect}
-                      onEffectChange={setCameraEffect}
-                      bgColor={cameraBgColor}
-                      onBgColorChange={setCameraBgColor}
-                      bgImageUrl={cameraBgImageUrl}
-                      onBgImageUrlChange={setCameraBgImageUrl}
-                      blurRadius={cameraBlurRadius}
-                      onBlurRadiusChange={setCameraBlurRadius}
-                      isLoading={effectsLoading}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
+            {stream && (
+              <CameraEffectsPanel
+                effect={cameraEffect} onEffectChange={setCameraEffect}
+                bgColor={cameraBgColor} onBgColorChange={setCameraBgColor}
+                bgImageUrl={cameraBgImageUrl} onBgImageUrlChange={setCameraBgImageUrl}
+                blurRadius={cameraBlurRadius} onBlurRadiusChange={setCameraBlurRadius}
+                isLoading={effectsLoading}
+              />
+            )}
+            {latestFinderImage && (
+              <Button size="sm" variant="outline" className="w-full" onClick={() => void removeBgFromLatest()} disabled={isRemovingLatestBg}>
+                <Wand2 className="mr-2 h-4 w-4" />
+                {isRemovingLatestBg ? "Removing..." : "Remove BG (latest)"}
+              </Button>
+            )}
+            {effectsError && <p className="rounded bg-amber-50 p-2 text-xs text-amber-700">{effectsError}</p>}
+            {recorder.error && <p className="rounded bg-red-50 p-2 text-xs text-red-600">{recorder.error}</p>}
           </div>
         )}
 
-        {showImageFinder && (
-          <ImageFinder
-            visible={showImageFinder}
-            onClose={() => setShowImageFinder(false)}
-            onAddImage={(dataUrl: string, mimeType: string, name?: string) => {
-              void addImageToCanvas(dataUrl, mimeType, name ?? "finder-image");
-              setLatestFinderImage({ dataUrl, name: name ?? "finder-image" });
-            }}
-          />
-        )}
-
-        <div className="flex h-full items-center justify-center px-2 pb-[154px] sm:px-4 md:px-8 lg:px-[300px]">
+        {/* Canvas area */}
+        <div className={`flex h-full items-center justify-center ${isMobile ? "px-1 pb-[140px]" : isTablet ? "px-4 pb-[100px]" : "px-4 pb-[100px] pl-[220px] lg:pl-[290px]"}`}>
           <div className={`mx-auto ${canvasAspectClass}`}>
             <div className="relative h-full overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <AiDiagramPrompt onGenerateElements={appendGeneratedElements} />
+              {/* AI Diagram — only visible when toggled (not always on top) */}
+              {showAiPrompt && <AiDiagramPrompt onGenerateElements={appendGeneratedElements} />}
               <WhiteboardCanvas
                 theme={theme}
                 penColor={penColor}
@@ -457,16 +387,15 @@ export function StudioPage() {
                 showGrid={showGrid}
                 onCanvasReady={setBoardCanvas}
                 onSceneChange={handleSceneChange}
-                onApiReady={(api) => {
-                  excalidrawApiRef.current = api;
-                }}
+                onApiReady={(api) => { excalidrawApiRef.current = api; }}
                 initialData={initialData}
               />
-              <CaptionOverlay text={transcript} visible={captionsEnabled && recorder.status === "recording"} />
+              <CaptionOverlay text={transcript} visible={captionsEnabled && isRecording} />
             </div>
           </div>
         </div>
 
+        {/* Slide nav */}
         <SlideNav
           slides={slides}
           activeSlideId={activeSlideId}
@@ -477,8 +406,10 @@ export function StudioPage() {
           onMoveRight={(id) => moveSlide(id, 1)}
         />
 
-        <Teleprompter visible={showTeleprompter} script={teleprompterScript} onScriptChange={setTeleprompterScript} isRecording={recorder.status === "recording"} />
+        {/* Teleprompter */}
+        <Teleprompter visible={showTeleprompter} script={teleprompterScript} onScriptChange={setTeleprompterScript} isRecording={isRecording} />
 
+        {/* Webcam PiP — always available, including mobile */}
         <WebcamPiP
           webcamStream={stream}
           onEnable={enableWebcam}
@@ -489,6 +420,118 @@ export function StudioPage() {
           processedCanvas={cameraEffect !== "none" ? processedCanvas : null}
         />
       </section>
+
+      {/* ====== MOBILE BOTTOM BAR ====== */}
+      {isMobile && (
+        <div className="shrink-0 border-t border-slate-200 bg-white px-2 py-1.5 safe-bottom">
+          <div className="flex items-center justify-around">
+            <button
+              className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] text-slate-600 active:bg-slate-100"
+              onClick={() => stream ? disableWebcam() : enableWebcam()}
+            >
+              {stream ? <CameraOff className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
+              Cam
+            </button>
+            <button
+              className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] text-slate-600 active:bg-slate-100"
+              onClick={() => setShowAiPrompt((p) => !p)}
+            >
+              <Sparkles className="h-5 w-5" />
+              AI
+            </button>
+            <button
+              className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] text-slate-600 active:bg-slate-100"
+              onClick={() => setShowImageFinder(true)}
+            >
+              <ImageIcon className="h-5 w-5" />
+              Images
+            </button>
+            <button
+              className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] text-slate-600 active:bg-slate-100"
+              onClick={() => setMobilePanel(mobilePanel === "tools" ? null : "tools")}
+            >
+              <ChevronDown className="h-5 w-5" />
+              More
+            </button>
+            <button
+              className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] text-slate-600 active:bg-slate-100"
+              onClick={() => setMobilePanel(mobilePanel === "settings" ? null : "settings")}
+            >
+              <Settings2 className="h-5 w-5" />
+              Settings
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ====== MOBILE DRAWERS ====== */}
+      <MobileDrawer open={mobilePanel === "tools"} onClose={() => setMobilePanel(null)} title="Tools">
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" className="min-h-12 justify-start" onClick={() => { setFormat("landscape"); setMobilePanel(null); }}>
+            🖥️ Landscape {format === "landscape" && "✓"}
+          </Button>
+          <Button variant="outline" className="min-h-12 justify-start" onClick={() => { setFormat("portrait"); setMobilePanel(null); }}>
+            📱 Portrait {format === "portrait" && "✓"}
+          </Button>
+          <Button variant="outline" className="min-h-12 justify-start" onClick={() => { setFormat("square"); setMobilePanel(null); }}>
+            ⬜ Square {format === "square" && "✓"}
+          </Button>
+          <Button variant="outline" className="min-h-12 justify-start" onClick={() => { setTheme((p) => (p === "light" ? "dark" : "light")); setMobilePanel(null); }}>
+            {theme === "light" ? "🌙 Dark UI" : "☀️ Light UI"}
+          </Button>
+          <Button variant="outline" className="min-h-12 justify-start" onClick={() => { setShowTeleprompter((p) => !p); setMobilePanel(null); }}>
+            📋 Teleprompter {showTeleprompter && "✓"}
+          </Button>
+          <Button variant="outline" className="min-h-12 justify-start" disabled={!captionsSupported} onClick={() => { setCaptionsEnabled((p) => !p); setMobilePanel(null); }}>
+            💬 Captions {captionsEnabled && "✓"}
+          </Button>
+          <Button variant="outline" className="min-h-12 col-span-2 justify-start" onClick={() => { setMobilePanel("templates"); }}>
+            📁 Templates
+          </Button>
+        </div>
+        <div className="mt-3">
+          <p className="mb-2 text-xs font-semibold text-slate-400 uppercase">Camera Layout</p>
+          <LayoutSelector value={layout} onChange={(v) => { setLayout(v); setMobilePanel(null); }} />
+        </div>
+      </MobileDrawer>
+
+      <MobileDrawer open={mobilePanel === "settings"} onClose={() => setMobilePanel(null)} title="Settings">
+        <div className="space-y-4">
+          <StudioSettingsPanel
+            penColor={penColor} onPenColorChange={setPenColor}
+            penThickness={penThickness} onPenThicknessChange={setPenThickness}
+            backgroundColor={backgroundColor} onBackgroundColorChange={setBackgroundColor}
+            showGrid={showGrid} onShowGridChange={setShowGrid}
+            countdownSeconds={countdownSeconds} onCountdownChange={setCountdownSeconds}
+            recordingQuality={recordingQuality} onRecordingQualityChange={setRecordingQuality}
+          />
+          {stream && (
+            <CameraEffectsPanel
+              effect={cameraEffect} onEffectChange={setCameraEffect}
+              bgColor={cameraBgColor} onBgColorChange={setCameraBgColor}
+              bgImageUrl={cameraBgImageUrl} onBgImageUrlChange={setCameraBgImageUrl}
+              blurRadius={cameraBlurRadius} onBlurRadiusChange={setCameraBlurRadius}
+              isLoading={effectsLoading}
+            />
+          )}
+        </div>
+      </MobileDrawer>
+
+      <MobileDrawer open={mobilePanel === "templates"} onClose={() => setMobilePanel(null)} title="Templates">
+        <TemplateManager templates={templates} onSave={saveTemplate} onLoad={loadTemplate} onDelete={deleteTemplate} />
+      </MobileDrawer>
+
+      {/* ====== MODALS ====== */}
+      {showImageFinder && (
+        <ImageFinder
+          visible={showImageFinder}
+          onClose={() => setShowImageFinder(false)}
+          onAddImage={(dataUrl: string, mimeType: string, name?: string) => {
+            void addImageToCanvas(dataUrl, mimeType, name ?? "finder-image");
+            setLatestFinderImage({ dataUrl, name: name ?? "finder-image" });
+          }}
+        />
+      )}
 
       {recorder.recordedBlob && isExportOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-2 sm:p-4">

@@ -21,28 +21,27 @@ interface Props {
 
 export function SlideNav({ slides, activeSlideId, onAdd, onSelect, onDelete, onMoveLeft, onMoveRight, className = "" }: Props) {
   return (
-    <div className={`absolute inset-x-2 bottom-20 z-35 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur md:inset-x-8 md:bottom-4 ${className}`}>
-      <div className="flex items-center gap-2 overflow-x-auto">
+    <div className={`absolute inset-x-2 bottom-2 z-30 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-lg backdrop-blur md:inset-x-8 md:bottom-4 md:p-2 ${className}`}>
+      <div className="flex items-center gap-1.5 overflow-x-auto md:gap-2">
         {slides.map((slide, index) => {
           const active = slide.id === activeSlideId;
           return (
             <div
               key={slide.id}
-              className={`min-w-[120px] rounded-lg border p-2 text-xs sm:min-w-[140px] ${active ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-slate-50"}`}
+              className={`min-w-[80px] shrink-0 rounded-lg border p-1.5 text-xs md:min-w-[120px] md:p-2 ${active ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-slate-50"}`}
             >
-              <button className="mb-2 w-full text-left font-semibold" onClick={() => onSelect(slide.id)}>
+              <button className="w-full text-left text-[11px] font-semibold md:mb-1 md:text-xs" onClick={() => onSelect(slide.id)}>
                 Slide {index + 1}
               </button>
-              <p className="truncate text-[11px] text-slate-500">{slide.elements.length} elements</p>
-              <div className="mt-2 flex gap-1">
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => onMoveLeft(slide.id)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => onMoveRight(slide.id)}><ChevronRight className="h-3.5 w-3.5" /></Button>
-                <Button size="sm" variant="ghost" className="ml-auto h-8 w-8 p-0 text-red-500" onClick={() => onDelete(slide.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              <div className="mt-1 flex gap-0.5">
+                <button className="rounded p-0.5 hover:bg-slate-200 active:bg-slate-300" onClick={() => onMoveLeft(slide.id)}><ChevronLeft className="h-3 w-3" /></button>
+                <button className="rounded p-0.5 hover:bg-slate-200 active:bg-slate-300" onClick={() => onMoveRight(slide.id)}><ChevronRight className="h-3 w-3" /></button>
+                <button className="ml-auto rounded p-0.5 text-red-500 hover:bg-red-100 active:bg-red-200" onClick={() => onDelete(slide.id)}><Trash2 className="h-3 w-3" /></button>
               </div>
             </div>
           );
         })}
-        <Button size="sm" variant="outline" onClick={onAdd} className="h-14 min-w-[56px]"><Plus className="h-4 w-4" /></Button>
+        <Button size="sm" variant="outline" onClick={onAdd} className="h-10 min-w-[40px] shrink-0 md:h-14 md:min-w-[56px]"><Plus className="h-4 w-4" /></Button>
       </div>
     </div>
   );

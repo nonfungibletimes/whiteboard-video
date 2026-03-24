@@ -81,6 +81,10 @@
 }
 
 @layer utilities {
+  .safe-bottom {
+    padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
+  }
+
   .glass-card {
     background: rgba(53, 53, 52, 0.4);
     backdrop-filter: blur(20px);
