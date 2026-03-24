@@ -181,13 +181,17 @@ export function StudioPage() {
   }, [activeSlideId]);
 
   const handleSceneChange = useCallback((data: { elements: unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> }) => {
-    sceneDataRef.current = data;
+    // Strip collaborators before storing — it's a Map that can't survive JSON serialization
+    // and Excalidraw crashes if it gets a plain object back (TypeError: forEach is not a function)
+    const { collaborators: _c, ...safeAppState } = data.appState;
+    sceneDataRef.current = { elements: data.elements, appState: safeAppState, files: data.files };
   }, []);
 
   const saveTemplate = (name: string) => {
     const scene = sceneDataRef.current;
+    const { collaborators: _c, ...safeState } = scene.appState;
     const next: SavedTemplate[] = [
-      { id: crypto.randomUUID(), name, createdAt: Date.now(), elements: scene.elements, appState: scene.appState, files: scene.files },
+      { id: crypto.randomUUID(), name, createdAt: Date.now(), elements: scene.elements, appState: safeState, files: scene.files },
       ...templates,
     ].slice(0, 20);
     localStorage.setItem(TEMPLATE_KEY, JSON.stringify(next));
